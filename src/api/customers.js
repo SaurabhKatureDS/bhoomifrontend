@@ -1,7 +1,7 @@
 import { apiGet, apiPost, apiPut, apiDelete } from './client'
 
 /**
- * GET /api/v1/cash-customers — paged + searchable + cluster filter
+ * GET /api/v1/cash-customers — paged + searchable + cluster filters
  * @returns PageResponse<CustomerResponse>
  */
 export function listCashCustomers({ q = '', clusterId, page = 0, size = 50 } = {}) {
