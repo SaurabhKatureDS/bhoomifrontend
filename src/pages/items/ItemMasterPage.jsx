@@ -159,7 +159,7 @@ export default function ItemMasterPage() {
               </option>
             ))}
           </select>
-          <div className="relative max-w-xs flex-1">
+          <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
             <input
               type="text"

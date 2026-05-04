@@ -152,16 +152,16 @@ export default function CustomersPage() {
       <div className="px-4 py-6 md:px-8 space-y-5">
         {/* Tabs */}
         <div className="border-b border-surface-200">
-          <div className="flex gap-8">
+          <div className="flex gap-4 sm:gap-8 overflow-x-auto">
             <TabButton
               active={tab === TABS.GST}
               onClick={() => setTab(TABS.GST)}
-              label={`Zoho B2B Customers (${gstCount})`}
+              label={`B2B / GST (${gstCount})`}
             />
             <TabButton
               active={tab === TABS.CASH}
               onClick={() => setTab(TABS.CASH)}
-              label={`Cash Customers (${cashCount})`}
+              label={`Cash (${cashCount})`}
             />
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function CustomersPage() {
 
         {/* Filter bar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 items-center gap-3">
+          <div className="flex flex-1 flex-wrap items-center gap-3">
             <select
               value={clusterId}
               onChange={(e) => setClusterId(e.target.value)}
@@ -188,7 +188,7 @@ export default function CustomersPage() {
                 </option>
               ))}
             </select>
-            <div className="relative max-w-xs flex-1">
+            <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
               <input
                 type="text"
@@ -200,14 +200,14 @@ export default function CustomersPage() {
             </div>
           </div>
           {tab === TABS.CASH && (
-            <Button onClick={openAdd} className="gap-1.5">
+            <Button onClick={openAdd} className="gap-1.5 w-full sm:w-auto">
               <Plus className="h-4 w-4" /> Add Customer
             </Button>
           )}
         </div>
 
         {/* Table */}
-        <Card>
+        <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             {tab === TABS.GST ? (
               <GstTable rows={rows} loading={loading} />
@@ -248,7 +248,7 @@ function TabButton({ active, onClick, label }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'relative -mb-px px-1 py-3 text-sm font-medium transition-colors cursor-pointer',
+        'relative -mb-px whitespace-nowrap px-1 py-3 text-sm font-medium transition-colors cursor-pointer',
         active ? 'text-bhoomi-600' : 'text-surface-500 hover:text-surface-800'
       )}
     >
