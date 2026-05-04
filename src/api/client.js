@@ -3,11 +3,11 @@
  * Adds Authorization header (JWT) and parses JSON.
  * Wraps backend ApiResponse<T> — returns the inner `data`.
  */
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const BASE_URL = import.meta.env.VITE_API_URL || ''
 
 async function apiRequest(path, { method = 'GET', body, params, headers } = {}) {
   const token = localStorage.getItem('accessToken')
-  const url = new URL(`${BASE_URL}${path}`)
+  const url = new URL(`${BASE_URL}${path}`, window.location.origin)
 
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
