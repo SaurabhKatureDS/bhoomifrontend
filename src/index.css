@@ -1,0 +1,178 @@
+@import 'tailwindcss';
+
+/* Hide number input spinners */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BHOOMI ENTERPRISES — Design Tokens
+   Brand: #3D6FD4 (Primary Navy/Blue) · #F5F0E8 (Warm Ivory Surface)
+   ═══════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Primary / Accent — derived from #3D6FD4 / #1B2C5E ── */
+  --color-bhoomi-50: #eff3fb;
+  --color-bhoomi-100: #dde6f6;
+  --color-bhoomi-200: #b8c9ec;
+  --color-bhoomi-300: #8ba6df;
+  --color-bhoomi-400: #5b82d3;
+  --color-bhoomi-500: #3D6FD4;
+  --color-bhoomi-600: #2A4080;
+  --color-bhoomi-700: #243870;
+  --color-bhoomi-800: #1B2C5E;
+  --color-bhoomi-900: #15234a;
+  --color-bhoomi-950: #0c1530;
+
+  /* ── Surface — derived from #F5F0E8 (Warm Ivory) ────── */
+  --color-surface-50: #fbf8f3;
+  --color-surface-100: #F5F0E8;
+  --color-surface-200: #e8ddc9;
+  --color-surface-300: #c9b89a;
+  --color-surface-400: #a08f6f;
+  --color-surface-500: #7a6b50;
+  --color-surface-600: #5d5140;
+  --color-surface-700: #463c30;
+  --color-surface-800: #2e2820;
+  --color-surface-900: #1a1612;
+  --color-surface-950: #0d0a08;
+
+  /* Font families */
+  --font-sans: 'Nunito Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bebas Neue', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Base Styles
+   ═══════════════════════════════════════════════════════════ */
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-sans);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light mode (default) */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-page: #F5F0E8;
+  --text-primary: var(--color-surface-900);
+  --text-secondary: var(--color-surface-600);
+  --text-muted: var(--color-surface-400);
+  --border-color: var(--color-surface-200);
+  --ring-color: var(--color-bhoomi-500);
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Typography — Bebas Neue headings
+   ═══════════════════════════════════════════════════════════ */
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.06em;
+    line-height: 1.15;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Scrollbar Styling
+   ═══════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-300);
+  border-radius: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Utility Animations
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Micro-interactions — Hover & Active
+   ═══════════════════════════════════════════════════════════ */
+
+@media (hover: hover) and (pointer: fine) {
+  .card-hover {
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.08), 0 4px 10px -4px rgba(0, 0, 0, 0.04);
+  }
+
+  .row-hover {
+    transition: background-color 150ms ease;
+  }
+
+  .row-hover:hover {
+    background-color: var(--color-surface-50);
+  }
+}
+

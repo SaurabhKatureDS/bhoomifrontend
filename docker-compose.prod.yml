@@ -1,0 +1,13 @@
+services:
+  frontend:
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+    container_name: bhoomi-frontend
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - bhoomi-network
+
+networks:
+  bhoomi-network:
+    external: true
