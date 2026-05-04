@@ -7,8 +7,8 @@ RUN npm ci
 
 COPY . .
 
-# API base URL — nginx will proxy /api calls to the backend
-ENV VITE_API_URL="/api"
+# API base URL is empty — paths already start with /api/v1, nginx proxies /api/ to backend
+ENV VITE_API_URL=""
 RUN npm run build
 
 # Stage 2: Serve with Nginx
