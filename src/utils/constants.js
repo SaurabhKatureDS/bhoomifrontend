@@ -15,6 +15,9 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   CUSTOMERS: '/customers',
   ITEM_MASTER: '/item-master',
+  RATES: '/rates',
+  RATES_NEW: '/rates/new',
+  RATES_EDIT: '/rates/:id/edit',
 }
 
 /** Navigation items for the dashboard sidebar */
