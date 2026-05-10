@@ -111,7 +111,7 @@ function buildActivityEvents(timeline, collections, challan) {
       badgeClassName: 'bg-green-50 text-green-700 border-green-200',
       description: col.notes || null,
       note: null,
-      timestamp: col.collectionDate,
+      timestamp: col.createdAt ?? col.collectionDate,
       user: col.collectedBy || null,
       amount: col._challanAmount ?? col.amount,
       amountClassName: 'text-green-700',
@@ -210,7 +210,7 @@ export default function ViewChallanPage() {
           <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border', st.className)}>
             {st.label}
           </span>
-          <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.CHALLAN_EDIT.replace(':id', id))}>
+          <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.CHALLAN_EDIT.replace(':id', id))}>
             <Edit2 className="h-4 w-4" /> Edit
           </Button>
           {status === 'SAVED' && (
@@ -228,7 +228,7 @@ export default function ViewChallanPage() {
               <Trash2 className="h-4 w-4" /> Archive
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.CHALLAN_PRINT.replace(':id', id))}>
+          <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.CHALLAN_PRINT.replace(':id', id))}>
             <Printer className="h-4 w-4" /> Print
           </Button>
         </div>
@@ -326,7 +326,7 @@ export default function ViewChallanPage() {
                   </span>
                 </div>
               </div>
-              <Button size="sm" onClick={() => setShowRecordCollection(true)}>
+              <Button size="sm" onClick={() => balance > 0 && setShowRecordCollection(true)} disabled={balance <= 0}>
                 <Plus className="h-4 w-4" /> Record Collection
               </Button>
             </div>
@@ -418,12 +418,14 @@ function RecordCollectionModal({ challanId, challanNumber, customerId, customerN
     notes: '',
   })
   const [saving, setSaving] = useState(false)
+  const [amountError, setAmountError] = useState('')
 
   const handleSubmit = async () => {
     if (!form.amount || Number(form.amount) <= 0) {
-      alert('Enter a valid amount.')
+      setAmountError('Enter a valid amount.')
       return
     }
+    setAmountError('')
     const amt = Math.round(Number(form.amount))
     setSaving(true)
     try {
@@ -462,7 +464,16 @@ function RecordCollectionModal({ challanId, challanNumber, customerId, customerN
           <label className="block text-xs font-semibold text-surface-600 mb-1">
             Amount Collected *{balance > 0 && <span className="ml-2 text-red-500 font-normal">O/S: ₹{balance.toLocaleString('en-IN')}</span>}
           </label>
-          <input type="number" min={1} step={1} value={form.amount} onChange={e => set('amount', e.target.value)}
+          <input type="number" min={1} max={balance > 0 ? balance : undefined} step={1} value={form.amount}
+            onChange={e => {
+              const val = e.target.value
+              if (balance > 0 && Number(val) > balance) {
+                set('amount', balance)
+              } else {
+                set('amount', val)
+              }
+              setAmountError('')
+            }}
             className="w-full px-3 py-2 text-sm rounded-lg border border-surface-300 focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500" />
         </div>
         <div>

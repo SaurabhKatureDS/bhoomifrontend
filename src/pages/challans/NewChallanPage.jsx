@@ -241,7 +241,7 @@ export default function NewChallanPage() {
             </span>
           )}
           {isEdit && (
-            <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.CHALLAN_VIEW.replace(':id', id))}>
+            <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.CHALLAN_VIEW.replace(':id', id))}>
               <Eye className="h-4 w-4" /> View
             </Button>
           )}
