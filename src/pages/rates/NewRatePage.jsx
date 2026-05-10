@@ -148,6 +148,9 @@ export default function NewRatePage() {
   const [showImage, setShowImage] = useState(false)
   const [imageLoading, setImageLoading] = useState(false)
 
+  // customer type toggle: 'CASH' | 'GST'
+  const [custType, setCustType] = useState('CASH')
+
   // customer search
   const [custSearch, setCustSearch] = useState('')
   const [custResults, setCustResults] = useState([])
@@ -176,6 +179,7 @@ export default function NewRatePage() {
         setStatus(r.status || 'SAVED')
         setQuoteNumber(r.quoteNumber || '')
         setCustSearch(r.customerName || '')
+        if (r.customerType) setCustType(r.customerType === 'GST' ? 'GST' : 'CASH')
         setItems(
           (r.items || []).map((it) => ({
             itemId: it.itemId,
@@ -214,25 +218,23 @@ export default function NewRatePage() {
     const t = setTimeout(async () => {
       setCustLoading(true)
       try {
-        const [cash, gst] = await Promise.all([
-          listCashCustomers({ q: custSearch, size: 10 }),
-          listGstCustomers({ q: custSearch, size: 10 }),
-        ])
-        const combined = [
-          ...(cash?.content || []).map((c) => ({ ...c, _type: 'CASH' })),
-          ...(gst?.content || []).map((c) => ({ ...c, _type: 'GST' })),
-        ]
-        setCustResults(combined.slice(0, 15))
+        if (custType === 'CASH') {
+          const cash = await listCashCustomers({ q: custSearch, size: 15 })
+          setCustResults((cash?.content || []).map((c) => ({ ...c, _type: 'CASH' })))
+        } else {
+          const gst = await listGstCustomers({ q: custSearch, size: 15 })
+          setCustResults((gst?.content || []).map((c) => ({ ...c, _type: 'GST' })))
+        }
       } catch { /* ignore */ }
       finally { setCustLoading(false) }
     }, 280)
     return () => clearTimeout(t)
-  }, [custSearch])
+  }, [custSearch, custType])
 
   const selectCustomer = (c) => {
     setCustomerId(c.id)
     setCustomerName(c.name || c.companyName || '')
-    setCluster(c.cluster?.name || c.clusterSnapshot || '')
+    setCluster(c.clusterName || c.cluster?.name || c.clusterSnapshot || '')
     setCustSearch(c.name || c.companyName || '')
     setShowCustDrop(false)
     setCustResults([])
@@ -467,18 +469,55 @@ export default function NewRatePage() {
                 </div>
               </div>
             )}
+            {!isEdit && (
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-surface-500 mb-1">QUOTE NO</label>
+                <div className="text-sm font-mono text-surface-400 bg-surface-50 border border-dashed border-surface-300 rounded-lg px-3 py-2.5 w-64 italic">
+                  Auto-generated (QT/26-27/MM/001)
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Customer */}
-              <div className="relative">
+              <div className="relative md:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-surface-700 mb-1.5">
                   Customer <span className="text-red-500">*</span>
                 </label>
+
+                {/* Customer type toggle */}
+                <div className="flex mb-2 rounded-lg border border-surface-300 overflow-hidden w-fit">
+                  <button
+                    type="button"
+                    onClick={() => { setCustType('CASH'); setCustSearch(''); setCustomerId(''); setCustomerName(''); setCluster(''); setCustResults([]) }}
+                    className={cn(
+                      'px-3 py-1 text-xs font-medium transition-colors',
+                      custType === 'CASH'
+                        ? 'bg-bhoomi-600 text-white'
+                        : 'bg-white text-surface-600 hover:bg-surface-50'
+                    )}
+                  >
+                    Cash Customer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setCustType('GST'); setCustSearch(''); setCustomerId(''); setCustomerName(''); setCluster(''); setCustResults([]) }}
+                    className={cn(
+                      'px-3 py-1 text-xs font-medium transition-colors border-l border-surface-300',
+                      custType === 'GST'
+                        ? 'bg-bhoomi-600 text-white border-l-bhoomi-700'
+                        : 'bg-white text-surface-600 hover:bg-surface-50'
+                    )}
+                  >
+                    GST Customer (Zoho Books)
+                  </button>
+                </div>
+
                 <input
                   value={custSearch}
                   onChange={(e) => { setCustSearch(e.target.value); setShowCustDrop(true) }}
                   onFocus={() => setShowCustDrop(true)}
-                  placeholder="Search customer..."
+                  placeholder={custType === 'CASH' ? 'Search cash customer…' : 'Search GST customer (Zoho Books)…'}
                   className={cn(
                     'w-full rounded-lg border bg-surface-50 px-3 py-2.5 text-sm',
                     errors.customer ? 'border-red-500' : 'border-surface-300 focus:border-bhoomi-500 focus:ring-2 focus:ring-bhoomi-500/20'

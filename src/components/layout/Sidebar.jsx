@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useRef, useEffect } from 'react'
 import {
   LayoutDashboard,
@@ -38,8 +38,8 @@ const SECTIONS = [
   {
     title: 'Challans',
     items: [
-      { label: 'New Challan', icon: FilePlus, path: '/challans/new' },
-      { label: 'Challan List', icon: ListChecks, path: '/challans' },
+      { label: 'New Challan', icon: FilePlus, path: '/challans/new', end: true },
+      { label: 'Challan List', icon: ListChecks, path: '/challans', excludes: ['/challans/new'] },
       { label: 'Collections', icon: Banknote, path: '/collections' },
     ],
   },
@@ -61,8 +61,8 @@ const SECTIONS = [
   {
     title: 'Rates',
     items: [
-      { label: 'New Rate', icon: Plus, path: '/rates/new' },
-      { label: 'Rate List', icon: List, path: '/rates' },
+      { label: 'New Rate', icon: Plus, path: '/rates/new', end: true },
+      { label: 'Rate List', icon: List, path: '/rates', excludes: ['/rates/new'] },
     ],
   },
   {
@@ -79,6 +79,7 @@ const SECTIONS = [
 export function Sidebar({ isOpen = true, onToggle, mobileOpen = false, onMobileClose }) {
   const { logout } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const navRef = useRef(null)
 
   // Restore scroll position on mount
@@ -169,20 +170,22 @@ export function Sidebar({ isOpen = true, onToggle, mobileOpen = false, onMobileC
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon
+                const isActive = item.end
+                  ? pathname === item.path
+                  : pathname.startsWith(item.path) &&
+                    !(item.excludes || []).some((ex) => pathname.startsWith(ex))
                 return (
                   <NavLink
                     key={item.label}
                     to={item.path}
                     onClick={() => mobileOpen && onMobileClose?.()}
-                    className={({ isActive }) =>
-                      cn(
-                        'flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                        isActive
-                          ? 'bg-white/15 text-white shadow-sm'
-                          : 'text-white/75 hover:bg-white/10 hover:text-white',
-                        isOpen || mobileOpen ? 'gap-3' : 'justify-center px-2'
-                      )
-                    }
+                    className={cn(
+                      'flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-white/15 text-white shadow-sm'
+                        : 'text-white/75 hover:bg-white/10 hover:text-white',
+                      isOpen || mobileOpen ? 'gap-3' : 'justify-center px-2'
+                    )}
                     title={!isOpen && !mobileOpen ? item.label : undefined}
                   >
                     <Icon className="h-4 w-4 shrink-0" />

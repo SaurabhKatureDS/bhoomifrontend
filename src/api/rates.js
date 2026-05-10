@@ -2,10 +2,10 @@ import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from './client'
 
 /**
  * GET /api/v1/rates  — list with optional filters
- * @param {{ customerId?, from?, to?, status?, page?, size?, sort? }} params
+ * @param {{ customerId?, q?, cluster?, from?, to?, status?, validTillStatus?, page?, size?, sort? }} params
  */
-export function listRates({ customerId, from, to, status, page = 0, size = 20, sort } = {}) {
-  return apiGet('/api/v1/rates', { customerId, from, to, status, page, size, sort })
+export function listRates({ customerId, q, cluster, from, to, status, validTillStatus, page = 0, size = 20, sort } = {}) {
+  return apiGet('/api/v1/rates', { customerId, q, cluster, from, to, status, validTillStatus, page, size, sort })
 }
 
 /** GET /api/v1/rates/:id */
