@@ -52,8 +52,8 @@ export default function CollectionListPage() {
   useEffect(() => { load() }, [load])
 
   // Compute summary stats from data
-  const totalCollected = data.content?.reduce((s, c) => s + (Number(c.collectedAmount) || 0), 0) || 0
-  const totalChallanAmount = data.content?.reduce((s, c) => s + (Number(c.challanAmount) || 0), 0) || 0
+  const totalCollected = data.content?.reduce((s, c) => s + (Number(c.amount) || 0), 0) || 0
+  const totalChallanAmount = data.content?.reduce((s, c) => s + (Number(c.allocations?.[0]?.challanTotalAmount) || 0), 0) || 0
 
   const filtered = (data.content || []).filter(c =>
     !search ||
@@ -133,10 +133,10 @@ export default function CollectionListPage() {
                     filtered.map(c => (
                       <tr key={c.id} className="hover:bg-surface-50 cursor-pointer" onClick={() => navigate(ROUTES.COLLECTION_VIEW.replace(':id', c.id))}>
                         <td className="px-3 py-3 text-surface-700">{fmtDate(c.collectionDate)}</td>
-                        <td className="px-3 py-3 text-bhoomi-700 font-medium">{c.challanNumber || '—'}</td>
+                        <td className="px-3 py-3 text-bhoomi-700 font-medium">{c.allocations?.[0]?.challanNumber || '—'}</td>
                         <td className="px-3 py-3 text-surface-900">{c.customerName}</td>
-                        <td className="px-3 py-3 text-right text-surface-700">{fmtMoney(c.challanAmount)}</td>
-                        <td className="px-3 py-3 text-right font-semibold text-green-700">{fmtMoney(c.collectedAmount)}</td>
+                        <td className="px-3 py-3 text-right text-surface-700">{fmtMoney(c.allocations?.[0]?.challanTotalAmount)}</td>
+                        <td className="px-3 py-3 text-right font-semibold text-green-700">{fmtMoney(c.amount)}</td>
                         <td className="px-3 py-3 text-surface-600">{c.collectedBy}</td>
                         <td className="px-3 py-3 text-surface-500 text-xs">{c.type}</td>
                       </tr>

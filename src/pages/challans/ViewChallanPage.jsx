@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Edit2, Truck, CheckCircle, Trash2, Plus, Printer } from 'lucide-react'
+import {
+  Edit2, Truck, CheckCircle, Trash2, Plus, Printer,
+  FilePlus2, PackageCheck, Archive, IndianRupee, ClipboardList,
+} from 'lucide-react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Modal, ModalFooter } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
+import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { getChallan, getChallanTimeline, markDispatched, markDelivered, deleteChallan } from '@/api/challans'
 import { listCollections, createCollection } from '@/api/collections'
 import { cn } from '@/utils/helpers'
@@ -27,26 +31,101 @@ const fmtDate = (v) => {
   return new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
 }
 
-const fmtDateTime = (v) => {
-  if (!v) return '—'
-  return new Date(v).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+const EVENT_META = {
+  SAVED: {
+    icon: FilePlus2,
+    iconClassName: 'bg-blue-100 text-blue-600',
+    badge: 'Created',
+    badgeClassName: 'bg-blue-50 text-blue-700 border-blue-200',
+  },
+  DISPATCHED: {
+    icon: Truck,
+    iconClassName: 'bg-amber-100 text-amber-600',
+    badge: 'Dispatched',
+    badgeClassName: 'bg-amber-50 text-amber-700 border-amber-200',
+  },
+  DELIVERED: {
+    icon: PackageCheck,
+    iconClassName: 'bg-indigo-100 text-indigo-600',
+    badge: 'Delivered',
+    badgeClassName: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  },
+  PAID: {
+    icon: IndianRupee,
+    iconClassName: 'bg-green-100 text-green-600',
+    badge: 'Paid',
+    badgeClassName: 'bg-green-50 text-green-700 border-green-200',
+  },
+  ARCHIVED: {
+    icon: Archive,
+    iconClassName: 'bg-red-100 text-red-500',
+    badge: 'Archived',
+    badgeClassName: 'bg-red-50 text-red-600 border-red-200',
+  },
 }
 
-function TimelineStep({ label, date, user, active, done }) {
-  return (
-    <div className={cn('flex items-start gap-3 pb-6 relative', !done && !active && 'opacity-40')}>
-      <div className={cn(
-        'w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 z-10',
-        done ? 'bg-green-500 border-green-500 text-white' : active ? 'bg-bhoomi-500 border-bhoomi-500 text-white' : 'bg-white border-surface-300'
-      )}>
-        {done ? <CheckCircle className="h-4 w-4" /> : <span className="h-2 w-2 rounded-full bg-current block" />}
-      </div>
-      <div>
-        <div className="text-sm font-semibold text-surface-800">{label}</div>
-        {date && <div className="text-xs text-surface-500">{fmtDateTime(date)}{user ? ` · ${user}` : ''}</div>}
-      </div>
-    </div>
-  )
+const EVENT_TITLES = {
+  SAVED:      'Challan Created',
+  DISPATCHED: 'Dispatched for Delivery',
+  DELIVERED:  'Delivery Confirmed',
+  PAID:       'Fully Paid',
+  ARCHIVED:   'Challan Archived',
+}
+
+/** Build a unified, sorted activity list from timeline + collection entries */
+function buildActivityEvents(timeline, collections, challan) {
+  const events = []
+
+  for (const t of timeline) {
+    const meta = EVENT_META[t.event] ?? {
+      icon: ClipboardList,
+      iconClassName: 'bg-surface-100 text-surface-500',
+    }
+    let description = null
+    if (t.event === 'SAVED' && challan) {
+      const items = challan.items?.length ?? 0
+      const amt = challan.totalAmount
+      description = [
+        items ? `${items} product${items !== 1 ? 's' : ''}` : null,
+        amt != null ? `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Number(amt))}` : null,
+      ].filter(Boolean).join(' · ')
+    }
+    events.push({
+      id: `tl-${t.id}`,
+      ...meta,
+      title: EVENT_TITLES[t.event] ?? t.event,
+      description: description || t.note || null,
+      note: description ? (t.note || null) : null,
+      timestamp: t.occurredAt ?? t.eventAt,
+      user: t.userName || null,
+    })
+  }
+
+  for (const col of collections) {
+    events.push({
+      id: `col-${col.id}`,
+      icon: IndianRupee,
+      iconClassName: 'bg-green-100 text-green-600',
+      title: 'Payment Recorded',
+      badge: col.type ?? null,
+      badgeClassName: 'bg-green-50 text-green-700 border-green-200',
+      description: col.notes || null,
+      note: null,
+      timestamp: col.collectionDate,
+      user: col.collectedBy || null,
+      amount: col._challanAmount ?? col.amount,
+      amountClassName: 'text-green-700',
+    })
+  }
+
+  // Sort chronologically (oldest first)
+  events.sort((a, b) => {
+    const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0
+    const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0
+    return ta - tb
+  })
+
+  return events
 }
 
 export default function ViewChallanPage() {
@@ -62,14 +141,24 @@ export default function ViewChallanPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const [c, tl, cols] = await Promise.all([
+      const [c, tl] = await Promise.all([
         getChallan(id),
         getChallanTimeline(id).catch(() => []),
-        listCollections({ challanId: id }).catch(() => ({ content: [] })),
       ])
       setChallan(c)
       setTimeline(Array.isArray(tl) ? tl : [])
-      setCollections(cols?.content || cols || [])
+      // Fetch collections by customer then filter to those allocated to this challan
+      const challanIdNum = Number(id)
+      const cols = await listCollections({ customerId: c.customerId, size: 200 }).catch(() => ({ content: [] }))
+      const allCols = cols?.content || cols || []
+      const filtered = allCols
+        .map(col => {
+          const alloc = (col.allocations || []).find(a => a.challanId === challanIdNum)
+          if (!alloc) return null
+          return { ...col, _challanAmount: alloc.amountAdjusted }
+        })
+        .filter(Boolean)
+      setCollections(filtered)
     } catch (e) {
       console.error(e)
     } finally {
@@ -110,11 +199,7 @@ export default function ViewChallanPage() {
   const st = STATUS_META[status] || STATUS_META.SAVED
   const balance = (challan.totalAmount || 0) - (challan.totalCollected || 0)
   const totalCases = challan.items?.reduce((sum, l) => sum + (Number(l.cases) || 0), 0) || challan.totalCases || 0
-  const tl = {
-    SAVED:      timeline.find(t => t.status === 'SAVED'),
-    DISPATCHED: timeline.find(t => t.status === 'DISPATCHED'),
-    DELIVERED:  timeline.find(t => t.status === 'DELIVERED'),
-  }
+  const activityEvents = buildActivityEvents(timeline, collections, challan)
 
   return (
     <AppLayout
@@ -266,7 +351,7 @@ export default function ViewChallanPage() {
                         <td className="px-3 py-2 text-surface-700">{fmtDate(c.collectionDate)}</td>
                         <td className="px-3 py-2 text-surface-700">{c.collectedBy}</td>
                         <td className="px-3 py-2 text-surface-500">{c.type}</td>
-                        <td className="px-3 py-2 text-right font-medium text-green-700">{fmtMoney(c.collectedAmount)}</td>
+                        <td className="px-3 py-2 text-right font-medium text-green-700">{fmtMoney(c._challanAmount ?? c.amount)}</td>
                       </tr>
                     ))
                   )}
@@ -276,21 +361,15 @@ export default function ViewChallanPage() {
           </Card>
         </div>
 
-        {/* Sidebar: Timeline */}
+        {/* Sidebar: Activity History */}
         <div className="space-y-4">
           <Card>
             <div className="px-4 py-3 border-b border-surface-200">
-              <h3 className="text-sm font-semibold text-surface-800">Timeline</h3>
+              <h3 className="text-sm font-semibold text-surface-800">Activity History</h3>
+              <p className="text-xs text-surface-400 mt-0.5">{activityEvents.length} event{activityEvents.length !== 1 ? 's' : ''}</p>
             </div>
             <CardBody className="py-4">
-              <div className="relative">
-                {/* vertical line */}
-                <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-surface-200" />
-                <TimelineStep label="Saved" date={tl.SAVED?.eventAt} user={tl.SAVED?.userName} active={status === 'SAVED'} done={['DISPATCHED','DELIVERED','PAID'].includes(status)} />
-                <TimelineStep label="Dispatched" date={tl.DISPATCHED?.eventAt} user={tl.DISPATCHED?.userName} active={status === 'DISPATCHED'} done={['DELIVERED','PAID'].includes(status)} />
-                <TimelineStep label="Delivered" date={tl.DELIVERED?.eventAt} user={tl.DELIVERED?.userName} active={status === 'DELIVERED'} done={['PAID'].includes(status)} />
-                <TimelineStep label="Paid" date={null} user={null} active={status === 'PAID'} done={status === 'PAID'} />
-              </div>
+              <ActivityTimeline events={activityEvents} />
             </CardBody>
           </Card>
 

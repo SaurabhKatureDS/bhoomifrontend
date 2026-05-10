@@ -60,20 +60,20 @@ export default function ViewCollectionPage() {
                 <dt className="text-xs text-surface-500 font-medium">Customer</dt>
                 <dd className="text-sm font-medium text-surface-900">{collection.customerName}</dd>
               </div>
-              {collection.challanNumber && (
+              {collection.allocations?.[0]?.challanNumber && (
                 <div>
                   <dt className="text-xs text-surface-500 font-medium">Challan #</dt>
                   <dd
                     className="text-sm text-bhoomi-700 font-medium cursor-pointer hover:underline"
-                    onClick={() => navigate(ROUTES.CHALLAN_VIEW.replace(':id', collection.challanId))}
+                    onClick={() => navigate(ROUTES.CHALLAN_VIEW.replace(':id', collection.allocations[0].challanId))}
                   >
-                    {collection.challanNumber}
+                    {collection.allocations[0].challanNumber}
                   </dd>
                 </div>
               )}
               <div>
                 <dt className="text-xs text-surface-500 font-medium">Amount Collected</dt>
-                <dd className="text-lg font-bold text-green-700">{fmtMoney(collection.collectedAmount)}</dd>
+                <dd className="text-lg font-bold text-green-700">{fmtMoney(collection.amount)}</dd>
               </div>
               {collection.collectedBy && (
                 <div>
