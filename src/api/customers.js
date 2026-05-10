@@ -1,11 +1,16 @@
 import { apiGet, apiPost, apiPut, apiDelete } from './client'
 
 /**
- * GET /api/v1/cash-customers — paged + searchable + cluster filters
- * @returns PageResponse<CustomerResponse>
+ * GET /api/v1/cash-customers — paged + searchable + sortable
+ * @returns PageResponse<CustomerSummaryResponse>
  */
-export function listCashCustomers({ q = '', clusterId, page = 0, size = 50 } = {}) {
-  return apiGet('/api/v1/cash-customers', { q, clusterId, page, size })
+export function listCashCustomers({ q = '', clusterId, page = 0, size = 25, sortBy = 'outstanding', sortDir = 'desc' } = {}) {
+  return apiGet('/api/v1/cash-customers', { q, clusterId, page, size, sortBy, sortDir })
+}
+
+/** GET /api/v1/cash-customers/{id}/ledger */
+export function getCashCustomerLedger(id) {
+  return apiGet(`/api/v1/cash-customers/${id}/ledger`)
 }
 
 /** GET /api/v1/customers/gst — read-only Zoho-synced B2B */

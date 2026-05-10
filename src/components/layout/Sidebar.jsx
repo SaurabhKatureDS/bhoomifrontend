@@ -21,6 +21,10 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Receipt,
+  Building2,
+  PackageCheck,
+  FileStack,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/utils/helpers'
@@ -37,21 +41,21 @@ const SECTIONS = [
       { label: 'New Challan', icon: FilePlus, path: '/challans/new' },
       { label: 'Challan List', icon: ListChecks, path: '/challans' },
       { label: 'Collections', icon: Banknote, path: '/collections' },
-      { label: 'Sales Orders', icon: ClipboardList, path: '/sales-orders' },
     ],
   },
   {
     title: 'Inventory',
     items: [
-      { label: 'Stock Master', icon: Boxes, path: '/stock' },
-      { label: 'Unbilled Items', icon: Hourglass, path: '/unbilled' },
+      { label: 'Unbilled Items', icon: Hourglass, path: '/unbilled-items' },
+      { label: 'Unbilled Transactions', icon: FileStack, path: '/unbilled-transactions' },
     ],
   },
   {
     title: 'Finance',
     items: [
-      { label: 'Commission Ledger', icon: Wallet, path: '/commission' },
-      { label: 'Reconciliation', icon: CheckCircle2, path: '/reconciliation' },
+      { label: 'Payments', icon: Receipt, path: '/payments' },
+      { label: 'Billing Parties', icon: Building2, path: '/billing-parties' },
+      { label: 'Billed Items', icon: PackageCheck, path: '/billed-items' },
     ],
   },
   {
@@ -59,8 +63,6 @@ const SECTIONS = [
     items: [
       { label: 'New Rate', icon: Plus, path: '/rates/new' },
       { label: 'Rate List', icon: List, path: '/rates' },
-      { label: 'Price Lists', icon: CalendarDays, path: '/price-lists' },
-      { label: 'Broadcast', icon: Megaphone, path: '/broadcast' },
     ],
   },
   {
