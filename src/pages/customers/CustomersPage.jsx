@@ -85,6 +85,7 @@ export default function CustomersPage() {
 
   // Cash sort state
   const [cashSort, setCashSort] = useState({ by: 'outstanding', dir: 'desc' })
+  const [cashLabel, setCashLabel] = useState('')
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -104,7 +105,7 @@ export default function CustomersPage() {
   useEffect(() => {
     setGstPage(0)
     setCashPage(0)
-  }, [debouncedSearch, clusterId, pageSize, cashSort])
+  }, [debouncedSearch, clusterId, pageSize, cashSort, cashLabel])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -123,6 +124,7 @@ export default function CustomersPage() {
           page: cashPage,
           sortBy: cashSort.by,
           sortDir: cashSort.dir,
+          label: cashLabel || undefined,
         })
         setCashData(cash || { content: [], totalElements: 0 })
       }
@@ -131,7 +133,7 @@ export default function CustomersPage() {
     } finally {
       setLoading(false)
     }
-  }, [tab, debouncedSearch, clusterId, pageSize, gstPage, cashPage, cashSort])
+  }, [tab, debouncedSearch, clusterId, pageSize, gstPage, cashPage, cashSort, cashLabel])
 
   useEffect(() => {
     fetchData()
@@ -209,6 +211,17 @@ export default function CustomersPage() {
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+            {tab === TABS.CASH && (
+              <select
+                value={cashLabel}
+                onChange={(e) => setCashLabel(e.target.value)}
+                className="rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-bhoomi-500/30"
+              >
+                <option value="">All Labels</option>
+                <option value="Receivable">Receivable</option>
+                <option value="Advance received">Advance received</option>
+              </select>
+            )}
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
               <input

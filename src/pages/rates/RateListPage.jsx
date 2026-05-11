@@ -87,7 +87,7 @@ export default function RateListPage() {
   const [clusters, setClusters] = useState([])
 
   // Sort
-  const [sortField, setSortField] = useState('rateDate')
+  const [sortField, setSortField] = useState('id')
   const [sortDir, setSortDir] = useState('desc')
 
   // Pagination
@@ -307,6 +307,7 @@ export default function RateListPage() {
                     <SortTh field="clusterSnapshot" label="CLUSTER"    sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <SortTh field="poNumber"        label="PO #"       sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <SortTh field="validTill"       label="VALID TILL" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500"># SKUs</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-surface-500">CASES</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-surface-500">AMOUNT</th>
                     <SortTh field="status" label="STATUS" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="text-center" />
@@ -315,14 +316,14 @@ export default function RateListPage() {
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan={9} className="py-14 text-center">
+                      <td colSpan={10} className="py-14 text-center">
                         <Spinner className="mx-auto" />
                       </td>
                     </tr>
                   )}
                   {!loading && rates.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="py-14 text-center text-sm text-surface-400">
+                      <td colSpan={10} className="py-14 text-center text-sm text-surface-400">
                         {selMonth !== null
                           ? `No rate quotes for ${MONTHS[selMonth]} ${selYear}.`
                           : 'No rate quotes found.'}
@@ -442,6 +443,9 @@ function RateRow({ rate, onOpen }) {
           </span>
         </div>
       </td>
+
+      {/* # SKUs */}
+      <td className="px-4 py-3 text-center text-xs text-surface-700">{rate.items?.length ?? '—'}</td>
 
       {/* Cases */}
       <td className="px-4 py-3 text-center text-xs text-surface-700">{rate.totalCases ?? '—'}</td>

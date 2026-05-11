@@ -147,6 +147,7 @@ export default function NewRatePage() {
   const [errors, setErrors] = useState({})
   const [showImage, setShowImage] = useState(false)
   const [imageLoading, setImageLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   // customer type toggle: 'CASH' | 'GST'
   const [custType, setCustType] = useState('CASH')
@@ -387,20 +388,29 @@ export default function NewRatePage() {
     })),
   }
 
+  const getDownloadFilename = () => {
+    const month = rateDate ? rateDate.split('-')[1] : String(new Date().getMonth() + 1).padStart(2, '0')
+    const qParts = (quoteNumber || '').split('/')
+    const series = qParts.length >= 4 ? qParts[3] : '001'
+    const name = (customerName || 'quote').trim().replace(/[^a-zA-Z0-9\u0900-\u097F]+/g, '-').replace(/^-|-$/g, '')
+    return `${month}-${series}-${name}`
+  }
+
   const handleCopyImage = async () => {
     if (!imageRef.current) return
     setImageLoading(true)
     try {
       const blob = await toBlob(imageRef.current, { pixelRatio: 2, cacheBust: true })
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      alert('Image copied to clipboard!')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
     } catch (err) {
       // Fallback: trigger download
       try {
         const dataUrl = await toPng(imageRef.current, { pixelRatio: 2, cacheBust: true })
         const a = document.createElement('a')
         a.href = dataUrl
-        a.download = `${quoteNumber || 'rate-quote'}.png`
+        a.download = `${getDownloadFilename()}.png`
         a.click()
       } catch (e) {
         alert('Copy to clipboard not supported. Downloading instead.')
@@ -417,7 +427,7 @@ export default function NewRatePage() {
       const dataUrl = await toPng(imageRef.current, { pixelRatio: 2, cacheBust: true })
       const a = document.createElement('a')
       a.href = dataUrl
-      a.download = `${quoteNumber || 'rate-quote'}.png`
+      a.download = `${getDownloadFilename()}.png`
       a.click()
     } catch (err) {
       alert('Image generation failed.')
@@ -461,24 +471,9 @@ export default function NewRatePage() {
               )}
             </div>
 
-            {isEdit && (
-              <div className="mb-4">
-                <label className="block text-xs font-medium text-surface-500 mb-1">QUOTE NO</label>
-                <div className="text-sm font-mono text-surface-900 bg-surface-50 border border-surface-200 rounded-lg px-3 py-2.5 w-64">
-                  {quoteNumber || '—'}
-                </div>
-              </div>
-            )}
-            {!isEdit && (
-              <div className="mb-4">
-                <label className="block text-xs font-medium text-surface-500 mb-1">QUOTE NO</label>
-                <div className="text-sm font-mono text-surface-400 bg-surface-50 border border-dashed border-surface-300 rounded-lg px-3 py-2.5 w-64 italic">
-                  Auto-generated (QT/26-27/MM/001)
-                </div>
-              </div>
-            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
               {/* Customer */}
               <div className="relative md:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-surface-700 mb-1.5">
@@ -566,15 +561,20 @@ export default function NewRatePage() {
                 <label className="block text-sm font-medium text-surface-700 mb-1.5">
                   Date <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  value={rateDate}
-                  onChange={(e) => setRateDate(e.target.value)}
-                  className={cn(
+                <div className="relative">
+                  <div className={cn(
                     'w-full rounded-lg border bg-surface-50 px-3 py-2.5 text-sm',
-                    errors.rateDate ? 'border-red-500' : 'border-surface-300 focus:border-bhoomi-500 focus:ring-2 focus:ring-bhoomi-500/20'
-                  )}
-                />
+                    errors.rateDate ? 'border-red-500' : 'border-surface-300'
+                  )}>
+                    {rateDate ? fmtDateDisplay(rateDate) : 'Select date…'}
+                  </div>
+                  <input
+                    type="date"
+                    value={rateDate}
+                    onChange={(e) => setRateDate(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                </div>
                 {errors.rateDate && <p className="text-xs text-red-500 mt-1">{errors.rateDate}</p>}
               </div>
 
@@ -617,7 +617,7 @@ export default function NewRatePage() {
         <Card>
           <CardBody>
             <p className="text-xs text-surface-500 mb-3">Toggle columns to include in WhatsApp image (Product, Net Rate, Cases, Amount always visible)</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-x-5 gap-y-3">
               {Object.entries(VIS_LABELS).map(([key, label]) => {
                 const locked = LOCKED_VIS.has(key)
                 const on = vis[key] !== false
@@ -627,15 +627,21 @@ export default function NewRatePage() {
                     type="button"
                     disabled={locked}
                     onClick={() => !locked && setVis((v) => ({ ...v, [key]: !v[key] }))}
-                    className={cn(
-                      'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
-                      on
-                        ? 'bg-bhoomi-600 text-white border-bhoomi-600'
-                        : 'bg-surface-100 text-surface-600 border-surface-300',
-                      locked && 'opacity-70 cursor-not-allowed'
-                    )}
+                    className={cn('flex flex-col items-center gap-1.5', locked ? 'cursor-not-allowed' : 'cursor-pointer')}
                   >
-                    {label}
+                    <span className={cn('text-xs font-medium leading-none', on ? 'text-surface-800' : 'text-surface-400', locked && 'opacity-60')}>
+                      {label}
+                    </span>
+                    <div className={cn(
+                      'w-9 h-5 rounded-full relative transition-colors duration-200',
+                      on ? 'bg-bhoomi-600' : 'bg-surface-300',
+                      locked && 'opacity-60'
+                    )}>
+                      <div className={cn(
+                        'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200',
+                        on ? 'translate-x-4' : 'translate-x-0.5'
+                      )} />
+                    </div>
                   </button>
                 )
               })}
@@ -695,7 +701,7 @@ export default function NewRatePage() {
                     <th className="px-3 py-2 text-center text-surface-600 font-semibold w-24 bg-amber-50">Disc% TUR</th>
                     <th className="px-3 py-2 text-center text-surface-600 font-semibold w-24 bg-amber-50">Disc% MRP</th>
                     <th className="px-3 py-2 text-center text-surface-500 font-medium w-20 bg-blue-50">Net(excl)</th>
-                    <th className="px-3 py-2 text-center text-surface-600 font-semibold w-24 bg-green-50">Net Rate ⇒</th>
+                    <th className="px-3 py-2 text-center text-surface-600 font-semibold w-24 bg-green-50">Net Rate (incl.)</th>
                     <th className="px-3 py-2 text-center text-surface-600 font-semibold w-16">Cases</th>
                     <th className="px-3 py-2 text-right text-surface-500 font-medium w-24 bg-blue-50">Amount</th>
                     <th className="px-3 py-2 text-left text-surface-500 font-medium w-28">Note</th>
@@ -749,30 +755,26 @@ export default function NewRatePage() {
               <Image className="h-3.5 w-3.5" />
               {showImage ? 'Hide Preview' : 'Preview Image'}
             </Button>
-            {showImage && (
-              <>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  loading={imageLoading}
-                  onClick={handleCopyImage}
-                  className="gap-1"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  Copy for WhatsApp
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  loading={imageLoading}
-                  onClick={handleDownloadImage}
-                  className="gap-1"
-                >
-                  <Image className="h-3.5 w-3.5" />
-                  Download Image
-                </Button>
-              </>
-            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={imageLoading}
+              onClick={handleCopyImage}
+              className="gap-1"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              {copied ? 'Copied!' : 'Copy for WhatsApp'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={imageLoading}
+              onClick={handleDownloadImage}
+              className="gap-1"
+            >
+              <Image className="h-3.5 w-3.5" />
+              Download Image
+            </Button>
           </div>
           <div className="flex items-center gap-2">
             {isEdit && (
@@ -793,13 +795,18 @@ export default function NewRatePage() {
           </div>
         </div>
 
-        {/* ── Image preview (hidden off-screen for capture) ── */}
+        {/* Off-screen capture target — always rendered so copy/download works without opening preview */}
+        <div style={{ position: 'fixed', left: -10000, top: -10000, pointerEvents: 'none', zIndex: -1 }}>
+          <RateQuoteImage ref={imageRef} rate={rateForImage} visibleCols={vis} />
+        </div>
+
+        {/* ── Image preview ── */}
         {showImage && (
           <Card>
             <CardBody>
               <h3 className="text-sm font-semibold text-surface-700 mb-4">WhatsApp Image Preview</h3>
               <div className="overflow-x-auto">
-                <RateQuoteImage ref={imageRef} rate={rateForImage} visibleCols={vis} />
+                <RateQuoteImage rate={rateForImage} visibleCols={vis} />
               </div>
             </CardBody>
           </Card>

@@ -4,8 +4,8 @@ import { apiGet, apiPost, apiPut, apiDelete } from './client'
  * GET /api/v1/cash-customers — paged + searchable + sortable
  * @returns PageResponse<CustomerSummaryResponse>
  */
-export function listCashCustomers({ q = '', clusterId, page = 0, size = 25, sortBy = 'outstanding', sortDir = 'desc' } = {}) {
-  return apiGet('/api/v1/cash-customers', { q, clusterId, page, size, sortBy, sortDir })
+export function listCashCustomers({ q = '', clusterId, label, page = 0, size = 25, sortBy = 'outstanding', sortDir = 'desc' } = {}) {
+  return apiGet('/api/v1/cash-customers', { q, clusterId, label, page, size, sortBy, sortDir })
 }
 
 /** GET /api/v1/cash-customers/{id}/ledger */

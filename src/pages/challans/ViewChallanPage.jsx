@@ -6,12 +6,12 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Card, CardBody } from '@/components/ui/Card'
-import { Modal, ModalFooter } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { getChallan, getChallanTimeline, markDispatched, markDelivered, deleteChallan } from '@/api/challans'
-import { listCollections, createCollection } from '@/api/collections'
+import { listCollections } from '@/api/collections'
+import RecordCollectionModal from '@/pages/collections/RecordCollectionModal'
 import { cn } from '@/utils/helpers'
 import { ROUTES } from '@/utils/constants'
 
@@ -97,7 +97,7 @@ function buildActivityEvents(timeline, collections, challan) {
       description: description || t.note || null,
       note: description ? (t.note || null) : null,
       timestamp: t.occurredAt ?? t.eventAt,
-      user: t.userName || null,
+      user: t.userName || (t.userId ? `User #${t.userId}` : null),
     })
   }
 
@@ -228,7 +228,7 @@ export default function ViewChallanPage() {
               <Trash2 className="h-4 w-4" /> Archive
             </Button>
           )}
-          <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.CHALLAN_PRINT.replace(':id', id))}>
+          <Button variant="secondary" size="sm" onClick={() => window.open(ROUTES.CHALLAN_PRINT.replace(':id', id), '_blank')}>
             <Printer className="h-4 w-4" /> Print
           </Button>
         </div>
@@ -314,48 +314,66 @@ export default function ViewChallanPage() {
             </div>
           </Card>
 
-          {/* Collection History */}
+          {/* Collection Status + History */}
           <Card>
-            <div className="px-4 py-3 border-b border-surface-200 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-surface-800">Collection History</h3>
-                <div className="flex gap-4 mt-1 text-xs">
-                  <span className="text-green-700 font-medium">Received: {fmtMoney(challan.totalCollected)}</span>
-                  <span className={cn('font-medium', balance > 0 ? 'text-red-600' : 'text-surface-500')}>
-                    Balance: {balance > 0 ? fmtMoney(balance) : '—'}
-                  </span>
+            {/* Stat row */}
+            <div className="px-4 pt-4 pb-3 border-b border-surface-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-surface-800">Collection Status</h3>
+                <Button size="sm" onClick={() => setShowRecordCollection(true)} disabled={balance <= 0}>
+                  <Plus className="h-4 w-4" /> Record Collection
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-surface-50 border border-surface-200 px-3 py-3">
+                  <p className="text-xs text-surface-500 font-medium mb-1">Challan Amount</p>
+                  <p className="text-base font-bold text-surface-900">{fmtMoney(challan.totalAmount)}</p>
+                </div>
+                <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-3">
+                  <p className="text-xs text-green-700 font-medium mb-1">Received</p>
+                  <p className="text-base font-bold text-green-700">{fmtMoney(challan.totalCollected)}</p>
+                </div>
+                <div className={cn('rounded-xl border px-3 py-3', balance > 0 ? 'bg-red-50 border-red-200' : 'bg-surface-50 border-surface-200')}>
+                  <p className={cn('text-xs font-medium mb-1', balance > 0 ? 'text-red-600' : 'text-surface-500')}>Balance Due</p>
+                  <p className={cn('text-base font-bold', balance > 0 ? 'text-red-600' : 'text-surface-400')}>
+                    {balance > 0 ? fmtMoney(balance) : '—'}
+                  </p>
                 </div>
               </div>
-              <Button size="sm" onClick={() => balance > 0 && setShowRecordCollection(true)} disabled={balance <= 0}>
-                <Plus className="h-4 w-4" /> Record Collection
-              </Button>
             </div>
+            {/* Collection history table */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-surface-50 border-b border-surface-100">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">Date</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">Collection Date</th>
                     <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">Collected By</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">Type</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-surface-500">Amount</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-surface-500">Collected Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-100">
                   {collections.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-8 text-center text-xs text-surface-400">No collections recorded.</td>
+                      <td colSpan={3} className="px-3 py-8 text-center text-xs text-surface-400">No collections recorded yet.</td>
                     </tr>
                   ) : (
                     collections.map(c => (
                       <tr key={c.id} className="hover:bg-surface-50 cursor-pointer" onClick={() => navigate(ROUTES.COLLECTION_VIEW.replace(':id', c.id))}>
-                        <td className="px-3 py-2 text-surface-700">{fmtDate(c.collectionDate)}</td>
-                        <td className="px-3 py-2 text-surface-700">{c.collectedBy}</td>
-                        <td className="px-3 py-2 text-surface-500">{c.type}</td>
-                        <td className="px-3 py-2 text-right font-medium text-green-700">{fmtMoney(c._challanAmount ?? c.amount)}</td>
+                        <td className="px-3 py-2.5 text-surface-700">{fmtDate(c.collectionDate)}</td>
+                        <td className="px-3 py-2.5 text-surface-700">{c.collectedBy || '—'}</td>
+                        <td className="px-3 py-2.5 text-right font-semibold text-green-700">{fmtMoney(c._challanAmount ?? c.collectedAmount ?? c.amount)}</td>
                       </tr>
                     ))
                   )}
                 </tbody>
+                {collections.length > 0 && (
+                  <tfoot>
+                    <tr className="border-t-2 border-surface-200 bg-surface-50">
+                      <td colSpan={2} className="px-3 py-2 text-right text-xs font-semibold text-surface-600">Total Collected</td>
+                      <td className="px-3 py-2 text-right font-bold text-green-700 text-sm">{fmtMoney(challan.totalCollected)}</td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
           </Card>
@@ -372,128 +390,17 @@ export default function ViewChallanPage() {
               <ActivityTimeline events={activityEvents} />
             </CardBody>
           </Card>
-
-          {/* Financial Summary */}
-          <Card>
-            <CardBody className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-surface-600">Challan Amount</span>
-                <span className="font-semibold text-surface-900">{fmtMoney(challan.totalAmount)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-surface-600">Collected</span>
-                <span className="font-semibold text-green-700">{fmtMoney(challan.totalCollected)}</span>
-              </div>
-              <div className="border-t border-surface-200 pt-3 flex justify-between text-sm">
-                <span className="font-semibold text-surface-800">Balance</span>
-                <span className={cn('font-bold', balance > 0 ? 'text-red-600' : 'text-green-700')}>
-                  {balance > 0 ? fmtMoney(balance) : '—'}
-                </span>
-              </div>
-            </CardBody>
-          </Card>
         </div>
       </div>
 
       {showRecordCollection && (
         <RecordCollectionModal
-          challanId={id}
-          challanNumber={challan.challanNumber}
-          customerId={challan.customerId}
-          customerName={challan.customerName}
-          balance={balance}
+          prefillChallanId={Number(id)}
+          prefillCustomerId={challan.customerId}
           onClose={() => setShowRecordCollection(false)}
           onSuccess={() => { setShowRecordCollection(false); load() }}
         />
       )}
     </AppLayout>
-  )
-}
-
-function RecordCollectionModal({ challanId, challanNumber, customerId, customerName, balance, onClose, onSuccess }) {
-  const [form, setForm] = useState({
-    collectionDate: new Date().toISOString().slice(0, 10),
-    amount: '',
-    collectedBy: '',
-    notes: '',
-  })
-  const [saving, setSaving] = useState(false)
-  const [amountError, setAmountError] = useState('')
-
-  const handleSubmit = async () => {
-    if (!form.amount || Number(form.amount) <= 0) {
-      setAmountError('Enter a valid amount.')
-      return
-    }
-    setAmountError('')
-    const amt = Math.round(Number(form.amount))
-    setSaving(true)
-    try {
-      await createCollection({
-        customerId,
-        collectionDate: form.collectionDate,
-        amount: amt,
-        collectedBy: form.collectedBy,
-        type: 'AGAINST_DC',
-        notes: form.notes || undefined,
-        allocations: [{ challanId: Number(challanId), amountAdjusted: amt }],
-      })
-      onSuccess()
-    } catch (e) {
-      alert(e.message || 'Failed to record collection')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  return (
-    <Modal open title="Record Collection" onClose={onClose} size="sm">
-      <div className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-surface-600 mb-1">Collection Date</label>
-          <input type="date" value={form.collectionDate} onChange={e => set('collectionDate', e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-surface-300 focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-surface-600 mb-1">Customer</label>
-          <input value={customerName} readOnly className="w-full px-3 py-2 text-sm rounded-lg border border-surface-200 bg-surface-50 text-surface-500 cursor-not-allowed" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-surface-600 mb-1">
-            Amount Collected *{balance > 0 && <span className="ml-2 text-red-500 font-normal">O/S: ₹{balance.toLocaleString('en-IN')}</span>}
-          </label>
-          <input type="number" min={1} max={balance > 0 ? balance : undefined} step={1} value={form.amount}
-            onChange={e => {
-              const val = e.target.value
-              if (balance > 0 && Number(val) > balance) {
-                set('amount', balance)
-              } else {
-                set('amount', val)
-              }
-              setAmountError('')
-            }}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-surface-300 focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-surface-600 mb-1">Collected By</label>
-          <input type="text" value={form.collectedBy} onChange={e => set('collectedBy', e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-surface-300 focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-surface-600 mb-1">Notes</label>
-          <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-surface-300 focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500 resize-none" />
-        </div>
-      </div>
-      <ModalFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmit} disabled={saving}>
-          {saving ? <Spinner className="h-4 w-4" /> : null}
-          Save
-        </Button>
-      </ModalFooter>
-    </Modal>
   )
 }

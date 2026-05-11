@@ -34,21 +34,38 @@ export default function RecordCollectionModal({ onClose, onSuccess, prefillCusto
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [selectedChallan, setSelectedChallan] = useState(null)
   const [totalAllocated, setTotalAllocated] = useState(0)
+  const [errors, setErrors] = useState({})
 
   useEffect(() => {
     apiGet('/api/v1/cash-customers', { page: 0, size: 200 })
-      .then(r => setCustomers(r?.content || r || []))
+      .then(r => {
+        const list = r?.content || r || []
+        setCustomers(list)
+        // Auto-select if prefill was provided
+        if (prefillCustomerId) {
+          const match = list.find(c => String(c.id) === String(prefillCustomerId))
+          if (match) { setSelectedCustomer(match); setCustomerSearch(match.name) }
+        }
+      })
       .catch(() => {})
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!form.customerId || form.type !== 'AGAINST_DC') { setChallans([]); return }
     setChallansLoading(true)
     getOutstandingChallans(form.customerId)
-      .then(r => setChallans(Array.isArray(r) ? r : r?.content || []))
+      .then(r => {
+        const list = Array.isArray(r) ? r : r?.content || []
+        setChallans(list)
+        // Auto-select challan if prefill was provided
+        if (prefillChallanId) {
+          const match = list.find(ch => String(ch.id) === String(prefillChallanId))
+          if (match) { setSelectedChallan(match); setChallanSearch(match.challanNumber) }
+        }
+      })
       .catch(() => setChallans([]))
       .finally(() => setChallansLoading(false))
-  }, [form.customerId, form.type])
+  }, [form.customerId, form.type]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -72,30 +89,37 @@ export default function RecordCollectionModal({ onClose, onSuccess, prefillCusto
   const filteredChallans = challans.filter(c => !challanSearch || c.challanNumber?.toLowerCase().includes(challanSearch.toLowerCase())).slice(0, 20)
 
   const handleSubmit = async () => {
-    if (!form.customerId) { alert('Select a customer.'); return }
-    if (!form.collectedAmount || Number(form.collectedAmount) <= 0) { alert('Enter a valid amount.'); return }
-    if (form.type === 'AGAINST_DC' && !form.challanId) { alert('Select a challan.'); return }
+    const errs = {}
+    if (!form.customerId) errs.customerId = 'Please select a customer.'
+    if (!form.collectedAmount || Number(form.collectedAmount) <= 0) errs.collectedAmount = 'Enter a valid amount greater than 0.'
+    if (!form.collectedBy?.trim()) errs.collectedBy = 'Collected By is required.'
+    if (form.type === 'AGAINST_DC' && !form.challanId) errs.challanId = 'Please select a delivery challan.'
+    if (Object.keys(errs).length) { setErrors(errs); return }
+    setErrors({})
     setSaving(true)
     try {
+      const amt = Math.round(Number(form.collectedAmount))
       await createCollection({
         customerId: form.customerId,
-        challanId: form.type === 'AGAINST_DC' ? form.challanId : undefined,
         collectionDate: form.collectionDate,
-        collectedAmount: Math.round(Number(form.collectedAmount)),
+        amount: amt,
         collectedBy: form.collectedBy || undefined,
         type: form.type,
         notes: form.notes || undefined,
+        allocations: form.type === 'AGAINST_DC' && form.challanId
+          ? [{ challanId: Number(form.challanId), amountAdjusted: amt }]
+          : undefined,
       })
       onSuccess()
     } catch (e) {
-      alert(e.message || 'Failed to record collection')
+      setErrors({ submit: e.message || 'Failed to record collection. Please try again.' })
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title="Record Collection" onClose={onClose} size="md">
+    <Modal open title="Record Collection" onClose={onClose} size="md">
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -116,11 +140,12 @@ export default function RecordCollectionModal({ onClose, onSuccess, prefillCusto
           <label className="block text-xs font-semibold text-surface-600 mb-1">Customer *</label>
           <input
             value={customerSearch}
-            onChange={e => { setCustomerSearch(e.target.value); setCustomerDropdown(true) }}
+            onChange={e => { setCustomerSearch(e.target.value); setCustomerDropdown(true); setErrors(v => ({ ...v, customerId: undefined })) }}
             onFocus={() => setCustomerDropdown(true)}
             placeholder="Search customer..."
-            className="w-full px-3 py-2 text-sm rounded-lg border border-surface-300 bg-white focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500"
+            className={`w-full px-3 py-2 text-sm rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500 ${errors.customerId ? 'border-red-400' : 'border-surface-300'}`}
           />
+          {errors.customerId && <p className="mt-1 text-xs text-red-500">{errors.customerId}</p>}
           {customerDropdown && filteredCustomers.length > 0 && (
             <ul className="absolute z-50 mt-1 w-full bg-white border border-surface-200 rounded-lg shadow-lg max-h-48 overflow-y-auto text-sm">
               {filteredCustomers.map(c => (
@@ -165,20 +190,59 @@ export default function RecordCollectionModal({ onClose, onSuccess, prefillCusto
                 <span className="text-red-600">O/S: <strong>{fmtMoney(selectedChallan.balance)}</strong></span>
               </div>
             )}
+            {errors.challanId && <p className="mt-1 text-xs text-red-500">{errors.challanId}</p>}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-surface-600 mb-1">Amount Collected *</label>
-            <input type="number" min={1} step={1} value={form.collectedAmount} onChange={e => set('collectedAmount', e.target.value)}
-              placeholder="₹ no decimals"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-surface-300 focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500" />
+            {(() => {
+              const maxAmt = selectedChallan
+                ? Math.min(
+                    Number(selectedChallan.totalAmount) || Infinity,
+                    Number(selectedChallan.balance) > 0 ? Number(selectedChallan.balance) : Infinity,
+                  )
+                : null
+              const limitedMax = maxAmt === Infinity ? null : maxAmt
+              const overLimit = limitedMax != null && Number(form.collectedAmount) > limitedMax
+              return (
+                <>
+                  <label className="block text-xs font-semibold text-surface-600 mb-1">
+                    Amount Collected *
+                    {limitedMax != null && (
+                      <span className="ml-2 font-normal text-surface-400">max {fmtMoney(limitedMax)}</span>
+                    )}
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={limitedMax ?? undefined}
+                    step={1}
+                    value={form.collectedAmount}
+                    onChange={e => {
+                      const val = e.target.value
+                      setErrors(v => ({ ...v, collectedAmount: undefined }))
+                      if (limitedMax != null && Number(val) > limitedMax) {
+                        set('collectedAmount', String(limitedMax))
+                      } else {
+                        set('collectedAmount', val)
+                      }
+                    }}
+                    placeholder="₹ no decimals"
+                    className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500 ${overLimit || errors.collectedAmount ? 'border-red-400 bg-red-50' : 'border-surface-300'}`}
+                  />
+                  {(overLimit || errors.collectedAmount) && (
+                    <p className="mt-1 text-xs text-red-500">{overLimit ? `Cannot exceed ${fmtMoney(limitedMax)}` : errors.collectedAmount}</p>
+                  )}
+                </>
+              )
+            })()}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-surface-600 mb-1">Collected By</label>
-            <input type="text" value={form.collectedBy} onChange={e => set('collectedBy', e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-surface-300 focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500" />
+            <label className="block text-xs font-semibold text-surface-600 mb-1">Collected By *</label>
+            <input type="text" value={form.collectedBy} onChange={e => { set('collectedBy', e.target.value); setErrors(v => ({ ...v, collectedBy: undefined })) }}
+              className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500 ${errors.collectedBy ? 'border-red-400' : 'border-surface-300'}`} />
+            {errors.collectedBy && <p className="mt-1 text-xs text-red-500">{errors.collectedBy}</p>}
           </div>
         </div>
 
@@ -188,6 +252,12 @@ export default function RecordCollectionModal({ onClose, onSuccess, prefillCusto
             className="w-full px-3 py-2 text-sm rounded-lg border border-surface-300 focus:outline-none focus:ring-2 focus:ring-bhoomi-500/20 focus:border-bhoomi-500 resize-none" />
         </div>
       </div>
+
+      {errors.submit && (
+        <div className="mx-6 mb-4 px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">
+          {errors.submit}
+        </div>
+      )}
 
       <ModalFooter>
         <Button variant="outline" onClick={onClose}>Cancel</Button>
