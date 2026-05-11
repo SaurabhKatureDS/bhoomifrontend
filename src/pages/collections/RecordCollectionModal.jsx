@@ -179,7 +179,7 @@ export default function RecordCollectionModal({ onClose, onSuccess, prefillCusto
                     onMouseDown={e => { e.preventDefault(); handleChallanSelect(ch) }}>
                     <span className="font-medium">{ch.challanNumber}</span>
                     <span className="ml-2 text-xs text-surface-500">{new Date(ch.challanDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                    <span className="ml-auto text-xs text-red-600 float-right">O/S: {fmtMoney(ch.balance)}</span>
+                    <span className="ml-auto text-xs text-red-600 float-right">O/S: {fmtMoney((ch.totalAmount || 0) - (ch.totalCollected || 0))}</span>
                   </li>
                 ))}
               </ul>
@@ -187,7 +187,7 @@ export default function RecordCollectionModal({ onClose, onSuccess, prefillCusto
             {selectedChallan && (
               <div className="mt-1 flex gap-4 text-xs">
                 <span>Challan Amt: <strong>{fmtMoney(selectedChallan.totalAmount)}</strong></span>
-                <span className="text-red-600">O/S: <strong>{fmtMoney(selectedChallan.balance)}</strong></span>
+                <span className="text-red-600">O/S: <strong>{fmtMoney((selectedChallan.totalAmount || 0) - (selectedChallan.totalCollected || 0))}</strong></span>
               </div>
             )}
             {errors.challanId && <p className="mt-1 text-xs text-red-500">{errors.challanId}</p>}
@@ -197,10 +197,13 @@ export default function RecordCollectionModal({ onClose, onSuccess, prefillCusto
         <div className="grid grid-cols-2 gap-4">
           <div>
             {(() => {
+              const challanBalance = selectedChallan
+                ? (Number(selectedChallan.totalAmount) || 0) - (Number(selectedChallan.totalCollected) || 0)
+                : null
               const maxAmt = selectedChallan
                 ? Math.min(
                     Number(selectedChallan.totalAmount) || Infinity,
-                    Number(selectedChallan.balance) > 0 ? Number(selectedChallan.balance) : Infinity,
+                    challanBalance > 0 ? challanBalance : Infinity,
                   )
                 : null
               const limitedMax = maxAmt === Infinity ? null : maxAmt
