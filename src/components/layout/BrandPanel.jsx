@@ -1,4 +1,4 @@
-import { APP_NAME, APP_DIVISION, APP_TAGLINE, APP_CITIES } from '@/utils/constants'
+import finalLogo from '@/assets/Final.png'
 
 /**
  * Branded side panel shown on auth pages.
@@ -15,25 +15,10 @@ export function BrandPanel() {
       </div>
 
       <div className="relative z-10 flex flex-col items-center px-10 text-center text-white">
-        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/30 backdrop-blur-sm">
-          <span className="block h-3.5 w-3.5 rounded-full bg-white shadow-[0_0_20px_rgba(255,255,255,0.7)]" />
+        <img src={finalLogo} alt="Bhoomi Enterprises" className="mb-6 h-20 w-auto object-contain drop-shadow-lg" />
+        <div className="font-display text-3xl font-semibold tracking-wide">
+          Bhoomi Enterprises
         </div>
-
-        <div className="font-display text-4xl tracking-wider">
-          <span className="font-light">Bhoomi</span>
-          <span className="font-bold">.Enterprises</span>
-        </div>
-
-        <p className="mt-3 text-sm uppercase tracking-[0.25em] text-white/80">{APP_DIVISION}</p>
-
-        <div className="my-8 h-px w-24 bg-white/30" />
-
-        <p className="text-base font-medium text-white/95">{APP_TAGLINE}</p>
-        <p className="mt-2 text-xs uppercase tracking-[0.2em] text-white/60">{APP_CITIES}</p>
-
-        <p className="mt-12 text-[11px] uppercase tracking-[0.25em] text-white/50">
-          {APP_NAME} &copy; {new Date().getFullYear()}
-        </p>
       </div>
     </aside>
   )

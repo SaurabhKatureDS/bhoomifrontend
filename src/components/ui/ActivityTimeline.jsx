@@ -23,10 +23,18 @@ import { cn } from '@/utils/helpers'
  *   ]} />
  */
 
+/** Parse a timestamp string as UTC when it has no timezone designator. */
+function parseTimestamp(v) {
+  if (!v) return null
+  // If there's no timezone offset or Z suffix, the server sent a naive UTC string — append Z
+  const s = /[Zz]$|[+-]\d{2}:\d{2}$/.test(v) ? v : v + 'Z'
+  const d = new Date(s)
+  return isNaN(d) ? null : d
+}
+
 function relativeTime(dateStr) {
-  if (!dateStr) return null
-  const date = new Date(dateStr)
-  if (isNaN(date)) return null
+  const date = parseTimestamp(dateStr)
+  if (!date) return null
   const diffMs = Date.now() - date.getTime()
   const diffMin = Math.floor(diffMs / 60_000)
   const diffHr = Math.floor(diffMs / 3_600_000)
@@ -40,9 +48,8 @@ function relativeTime(dateStr) {
 }
 
 function fmtDateTime(v) {
-  if (!v) return null
-  const d = new Date(v)
-  if (isNaN(d)) return null
+  const d = parseTimestamp(v)
+  if (!d) return null
   return d.toLocaleString('en-IN', {
     day: '2-digit',
     month: 'short',

@@ -19,14 +19,6 @@ import AddCashCustomerModal from './AddCashCustomerModal'
 
 const TABS = { GST: 'gst', CASH: 'cash' }
 
-function deriveBusinessType(c) {
-  const t = (c.gstTreatment || '').toLowerCase()
-  if (t.includes('overseas') || t.includes('export')) return { label: 'Exporter', variant: 'purple' }
-  if (t.includes('composition')) return { label: 'Distributor', variant: 'blue' }
-  if (t.includes('consumer')) return { label: 'Retailer', variant: 'amber' }
-  if (c.gstin) return { label: 'Wholesaler', variant: 'blue' }
-  return { label: '—', variant: 'default' }
-}
 
 const fmtMoney = (v) =>
   v == null ? null : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Number(v))
@@ -446,15 +438,23 @@ function CashTable({ rows, loading, sort, onSort, onEdit, onRowClick }) {
   )
 }
 
+const GST_COLS = [
+  'Customer Name',
+  'Billing Address',
+  'Shipping Address',
+  'GSTIN',
+  'Place of Supply',
+  'Mobile Phone',
+]
+
 function GstTable({ rows, loading }) {
-  const cols = ['Name', 'Type', 'Cluster', 'Phone', 'Last Rate', 'Active']
   return (
     <table className="min-w-full divide-y divide-surface-200">
       <thead className="bg-surface-50">
         <tr>
-          {cols.map((c) => (
-            <th key={c} className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-surface-500">
-              {c}
+          {GST_COLS.map((col) => (
+            <th key={col} className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-surface-500 whitespace-nowrap">
+              {col}
             </th>
           ))}
         </tr>
@@ -462,33 +462,33 @@ function GstTable({ rows, loading }) {
       <tbody className="divide-y divide-surface-100 bg-white">
         {loading ? (
           <tr>
-            <td colSpan={cols.length} className="px-5 py-10 text-center"><Spinner /></td>
+            <td colSpan={GST_COLS.length} className="px-5 py-10 text-center"><Spinner /></td>
           </tr>
         ) : rows.length === 0 ? (
           <tr>
-            <td colSpan={cols.length} className="px-5 py-10 text-center text-sm text-surface-500">No B2B customers found.</td>
+            <td colSpan={GST_COLS.length} className="px-5 py-10 text-center text-sm text-surface-500">No B2B customers found.</td>
           </tr>
         ) : (
-          rows.map((c) => {
-            const type = deriveBusinessType(c)
-            const phone = c.phone || c.mobilePhone
-            return (
-              <tr key={c.id} className="hover:bg-surface-50/50">
-                <td className="px-5 py-3 text-sm font-medium text-surface-900">{c.name}</td>
-                <td className="px-5 py-3 text-sm"><Badge variant={type.variant}>{type.label}</Badge></td>
-                <td className="px-5 py-3 text-sm">
-                  {c.clusterName ? <Badge variant="default">{c.clusterName}</Badge> : <span className="text-surface-400">—</span>}
-                </td>
-                <td className="px-5 py-3 text-sm text-surface-700">
-                  {phone ? formatPhone(phone) : <span className="text-surface-400">—</span>}
-                </td>
-                <td className="px-5 py-3 text-sm text-surface-600">{fmtDate(c.updatedAt) || <span className="text-surface-400">—</span>}</td>
-                <td className="px-5 py-3 text-sm">
-                  <Badge variant={c.status === 'ACTIVE' ? 'green' : 'red'}>{c.status === 'ACTIVE' ? 'Yes' : 'No'}</Badge>
-                </td>
-              </tr>
-            )
-          })
+          rows.map((c) => (
+            <tr key={c.id} className="hover:bg-surface-50/50">
+              <td className="px-5 py-3 text-sm font-medium text-surface-900">{c.name || <span className="text-surface-400">—</span>}</td>
+              <td className="px-5 py-3 text-sm text-surface-700 max-w-xs whitespace-pre-line">
+                {c.billingAddress || <span className="text-surface-400">—</span>}
+              </td>
+              <td className="px-5 py-3 text-sm text-surface-700 max-w-xs whitespace-pre-line">
+                {c.shippingAddress || <span className="text-surface-400">—</span>}
+              </td>
+              <td className="px-5 py-3 text-sm font-mono text-surface-800">
+                {c.gstin || <span className="text-surface-400">—</span>}
+              </td>
+              <td className="px-5 py-3 text-sm text-surface-700">
+                {c.placeOfSupply || <span className="text-surface-400">—</span>}
+              </td>
+              <td className="px-5 py-3 text-sm text-surface-700">
+                {c.mobilePhone ? formatPhone(c.mobilePhone) : <span className="text-surface-400">—</span>}
+              </td>
+            </tr>
+          ))
         )}
       </tbody>
     </table>

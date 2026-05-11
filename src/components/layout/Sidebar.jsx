@@ -28,7 +28,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/utils/helpers'
-import { APP_NAME, APP_DIVISION } from '@/utils/constants'
+import { APP_NAME } from '@/utils/constants'
+import finalLogo from '@/assets/Final.png'
 
 /**
  * Sidebar navigation, mirrors the Bhoomi Samadhan layout shown in mockups.
@@ -36,7 +37,7 @@ import { APP_NAME, APP_DIVISION } from '@/utils/constants'
  */
 const SECTIONS = [
   {
-    title: 'Challans',
+    title: 'Cash Sales',
     items: [
       { label: 'New Challan', icon: FilePlus, path: '/challans/new', end: true },
       { label: 'Challan List', icon: ListChecks, path: '/challans', excludes: ['/challans/new'] },
@@ -120,20 +121,13 @@ export function Sidebar({ isOpen = true, onToggle, mobileOpen = false, onMobileC
         )}
       >
         {(isOpen || mobileOpen) && (
-          <div className="flex-1 min-w-0">
-            <div className="font-display text-xl tracking-wider text-white">
-              <span className="font-bold">Bhoomi</span>
-              <span className="font-light text-white/70">.</span>
-            </div>
-            <p className="text-[11px] uppercase tracking-wider text-white/60">
-              {APP_DIVISION.replace(' Portal', '')}
-            </p>
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <img src={finalLogo} alt="Bhoomi Enterprises" className="h-8 w-auto object-contain" />
+            <span className="font-display text-base font-semibold tracking-wide text-white leading-tight">Bhoomi Enterprises</span>
           </div>
         )}
         {!isOpen && !mobileOpen && (
-          <div className="font-display text-lg font-bold tracking-wider text-white select-none">
-            B
-          </div>
+          <img src={finalLogo} alt="Bhoomi Enterprises" className="h-8 w-auto object-contain" />
         )}
         {/* Mobile: close button */}
         {mobileOpen && (
