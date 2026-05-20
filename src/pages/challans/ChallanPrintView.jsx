@@ -53,7 +53,15 @@ export default function ChallanPrintView() {
     setDownloading(true)
     try {
       // Capture the challan content as a high-res PNG
-      const dataUrl = await toPng(printRef.current, { pixelRatio: 3, backgroundColor: '#ffffff' })
+      const dataUrl = await toPng(printRef.current, {
+        pixelRatio: 3,
+        backgroundColor: '#ffffff',
+        style: {
+          margin: '0',
+          boxShadow: 'none',
+          transform: 'none',
+        }
+      })
 
       // Build a minimal single-page A4 PDF containing the image
       const img = new Image()
@@ -161,6 +169,7 @@ export default function ChallanPrintView() {
           body { margin: 0; background: #fff; }
           .no-print { display: none !important; }
           .print-bg { background: #fff !important; min-height: unset !important; padding: 0 !important; }
+          .print-wrapper { box-shadow: none !important; margin: 0 !important; padding: 0 !important; max-width: none !important; width: 100% !important; background: transparent !important; }
           .print-page { box-shadow: none !important; margin: 0 !important; padding: 15mm 18mm !important; max-width: none !important; width: 100% !important; }
         }
         table { border-collapse: collapse; width: 100%; }
@@ -203,12 +212,27 @@ export default function ChallanPrintView() {
       </div>
 
       {/* ── Page preview wrapper ── */}
-      <div className="print-bg" style={{ padding: '32px 24px' }}>
+      <div className="print-bg" style={{ padding: '32px 24px', display: 'flex', justifyContent: 'center' }}>
         <div
-          ref={printRef}
-          className="print-page"
-          style={{ background: '#fff', maxWidth: 794, margin: '0 auto', padding: '32px 40px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)', color: '#000' }}
+          className="print-wrapper"
+          style={{
+            background: '#fff',
+            maxWidth: 794,
+            width: '100%',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+          }}
         >
+          <div
+            ref={printRef}
+            className="print-page"
+            style={{
+              background: '#fff',
+              width: '100%',
+              padding: '32px 40px',
+              color: '#000',
+              margin: 0,
+            }}
+          >
           {/* Company Header */}
           <div style={{ textAlign: 'center', marginBottom: '12px' }}>
             <div style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '2px' }}>DELIVERY CHALLAN</div>
@@ -313,5 +337,6 @@ export default function ChallanPrintView() {
         </div>
       </div>
     </div>
+  </div>
   )
 }

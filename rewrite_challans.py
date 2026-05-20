@@ -1,4 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import re
+
+with open('src/pages/challans/ChallanListPage.jsx', 'r') as f:
+    content = f.read()
+
+# I will write out the exact full file content for ChallanListPage.jsx
+
+new_content = """import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Search, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -444,3 +451,7 @@ export default function ChallanListPage() {
     </AppLayout>
   )
 }
+"""
+
+with open('src/pages/challans/ChallanListPage.jsx', 'w') as f:
+    f.write(new_content)

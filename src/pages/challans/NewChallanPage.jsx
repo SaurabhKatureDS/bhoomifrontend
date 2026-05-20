@@ -54,12 +54,13 @@ const emptyLine = () => ({
   note: '',
 })
 
-function recalcLine(line) {
+function recalcLine(line, changedField = null) {
   const mrp       = line.mrp     !== '' ? Number(line.mrp)       : null
   const rmPct     = line.rmPercent !== '' ? Number(line.rmPercent) : null
   const gstPct    = line.gstRate  !== '' ? Number(line.gstRate)   : null
-  const netRate   = line.netRate  !== '' ? Number(line.netRate)   : null
+  let netRate     = line.netRate  !== '' ? Number(line.netRate)   : null
   const cases     = Number(line.cases) || 0
+  const pkgVal    = parseInt(line.packing) || Number(line.pkg) || 1
 
   // TUR incl = MRP / (1 + RM%/100)
   const turIncl = mrp != null && mrp > 0 && rmPct != null
@@ -69,22 +70,35 @@ function recalcLine(line) {
   const turExcl = turIncl !== '' && gstPct != null
     ? turIncl / (1 + gstPct / 100)
     : ''
+
+  if (changedField === 'discPctOnTur' && turIncl !== '') {
+    const discPct = line.discPctOnTur !== '' ? Number(line.discPctOnTur) : 0
+    netRate = Number((turIncl * (1 - discPct / 100)).toFixed(3))
+  } else if (changedField === 'discPctOnMrp' && mrp != null) {
+    const discPct = line.discPctOnMrp !== '' ? Number(line.discPctOnMrp) : 0
+    netRate = Number((mrp * (1 - discPct / 100)).toFixed(3))
+  }
+
   // Disc% on TUR = (1 − netRate/TURincl) × 100
-  const discPctOnTur = netRate != null && turIncl !== '' && turIncl > 0
+  let discPctOnTur = netRate != null && turIncl !== '' && turIncl > 0
     ? (1 - netRate / turIncl) * 100
     : ''
+  if (typeof discPctOnTur === 'number') discPctOnTur = Number(discPctOnTur.toFixed(2))
+
   // Disc% on MRP = (1 − netRate/MRP) × 100
-  const discPctOnMrp = netRate != null && mrp != null && mrp > 0
+  let discPctOnMrp = netRate != null && mrp != null && mrp > 0
     ? (1 - netRate / mrp) * 100
     : ''
+  if (typeof discPctOnMrp === 'number') discPctOnMrp = Number(discPctOnMrp.toFixed(2))
+
   // Net Rate excl = netRate / (1 + GST%/100)
   const netRateExcl = netRate != null && gstPct != null
     ? netRate / (1 + gstPct / 100)
     : ''
-  // Line total = cases × Net Rate incl
-  const lineTotal = netRate != null ? cases * netRate : 0
+  // Line total = cases × PKG × Net Rate incl
+  const lineTotal = netRate != null ? cases * pkgVal * netRate : 0
 
-  return { ...line, turIncl, turExcl, discPctOnTur, discPctOnMrp, netRateExcl, lineTotal }
+  return { ...line, netRate, turIncl, turExcl, discPctOnTur, discPctOnMrp, netRateExcl, lineTotal }
 }
 
 /* ── Searchable product combobox ── */
@@ -331,9 +345,15 @@ export default function NewChallanPage() {
         sku: l.sku,
         productName: l.productName,
         packing: l.packing,
-        pkg: '',
-        mrp: l.mrp,
-        gstRate: l.gstPercent || l.gstRate,
+        pkg: l.pkg != null ? String(l.pkg) : '',
+        mrp: l.mrp != null ? Number(l.mrp) : '',
+        rmPercent: l.rmPercent != null ? Number(l.rmPercent) : '',
+        gstRate: l.gstPercent || l.gstRate || '',
+        turIncl: l.turIncl != null ? Number(l.turIncl) : '',
+        turExcl: l.turExcl != null ? Number(l.turExcl) : '',
+        discPctOnTur: l.discPctOnTur != null ? Number(l.discPctOnTur) : '',
+        discPctOnMrp: l.discPctOnMrp != null ? Number(l.discPctOnMrp) : '',
+        netRateExcl: l.netRateExcl != null ? Number(l.netRateExcl) : '',
         cases: l.cases,
         rateMode: l.rateMode || 'NET',
         netRate: l.netRate || '',
@@ -372,7 +392,8 @@ export default function NewChallanPage() {
     const prefilled = (rate.items || []).map(item => {
       const cases = item.cases != null ? item.cases : ''
       const netRate = item.netRate != null ? Number(item.netRate) : 0
-      const lineTotal = (Number(cases) || 0) * netRate
+      const pkg = parseInt(item.packing) || (item.pkg != null ? Number(item.pkg) : 1)
+      const lineTotal = (Number(cases) || 0) * pkg * netRate
       return {
         _key: Math.random().toString(36).slice(2),
         itemId: item.itemId || '',
@@ -448,7 +469,7 @@ export default function NewChallanPage() {
   const updateLine = (idx, field, value) => {
     setLines(ls => ls.map((l, i) => {
       if (i !== idx) return l
-      return recalcLine({ ...l, [field]: value })
+      return recalcLine({ ...l, [field]: value }, field)
     }))
   }
 
@@ -468,11 +489,20 @@ export default function NewChallanPage() {
       productName: l.productName || undefined,
       sku: l.sku || undefined,
       packing: l.packing || undefined,
+      pkg: l.pkg !== '' ? Number(l.pkg) : undefined,
       mrp: l.mrp !== '' ? Number(l.mrp) : undefined,
+      rmPercent: l.rmPercent !== '' ? Number(l.rmPercent) : undefined,
       gstPercent: l.gstRate !== '' ? Number(l.gstRate) : undefined,
+      turIncl: l.turIncl !== '' ? Number(l.turIncl) : undefined,
+      turExcl: l.turExcl !== '' ? Number(l.turExcl) : undefined,
+      discPctOnTur: l.discPctOnTur !== '' ? Number(l.discPctOnTur) : undefined,
+      discPctOnMrp: l.discPctOnMrp !== '' ? Number(l.discPctOnMrp) : undefined,
+      netRateExcl: l.netRateExcl !== '' ? Number(l.netRateExcl) : undefined,
       cases: Number(l.cases) || 0,
       rateMode: 'NET',
       netRate: l.netRate !== '' ? Number(l.netRate) : undefined,
+      discPct: l.discPct !== '' ? Number(l.discPct) : undefined,
+      note: l.note || undefined,
       lineAmount: l.lineTotal ? Number(l.lineTotal) : undefined,
       adhoc: false,
     })),
@@ -951,13 +981,37 @@ export default function NewChallanPage() {
                       <td className="px-2 py-2.5 text-right text-xs text-slate-500 bg-slate-50/60 border-r border-slate-100">
                         {line.turExcl !== '' ? Number(line.turExcl).toFixed(2) : <span className="text-surface-200">—</span>}
                       </td>
-                      {/* Disc%TUR — calculated */}
-                      <td className="px-2 py-2.5 text-right text-xs text-amber-700 font-medium bg-amber-50/50 border-l border-amber-100">
-                        {line.discPctOnTur !== '' ? `${Number(line.discPctOnTur).toFixed(2)}%` : <span className="text-amber-200">—</span>}
+                      {/* Disc%TUR — editable ✏️ */}
+                      <td className="px-2 py-1.5 bg-amber-50/50 border-l border-amber-100">
+                        {readOnly ? (
+                          <span className="block text-right text-xs text-amber-700 font-medium">
+                            {line.discPctOnTur !== '' ? `${Number(line.discPctOnTur).toFixed(2)}%` : <span className="text-amber-200">—</span>}
+                          </span>
+                        ) : (
+                          <input
+                            type="number" step={0.1}
+                            value={line.discPctOnTur}
+                            onChange={e => updateLine(idx, 'discPctOnTur', e.target.value)}
+                            placeholder="—"
+                            className="w-16 px-2 py-1.5 text-xs rounded-lg border-2 border-amber-200 bg-white text-right font-medium text-amber-700 focus:outline-none focus:border-amber-400 placeholder-amber-200"
+                          />
+                        )}
                       </td>
-                      {/* Disc%MRP — calculated */}
-                      <td className="px-2 py-2.5 text-right text-xs text-amber-700 font-medium bg-amber-50/50 border-r border-amber-100">
-                        {line.discPctOnMrp !== '' ? `${Number(line.discPctOnMrp).toFixed(2)}%` : <span className="text-amber-200">—</span>}
+                      {/* Disc%MRP — editable ✏️ */}
+                      <td className="px-2 py-1.5 bg-amber-50/50 border-r border-amber-100">
+                        {readOnly ? (
+                          <span className="block text-right text-xs text-amber-700 font-medium">
+                            {line.discPctOnMrp !== '' ? `${Number(line.discPctOnMrp).toFixed(2)}%` : <span className="text-amber-200">—</span>}
+                          </span>
+                        ) : (
+                          <input
+                            type="number" step={0.1}
+                            value={line.discPctOnMrp}
+                            onChange={e => updateLine(idx, 'discPctOnMrp', e.target.value)}
+                            placeholder="—"
+                            className="w-16 px-2 py-1.5 text-xs rounded-lg border-2 border-amber-200 bg-white text-right font-medium text-amber-700 focus:outline-none focus:border-amber-400 placeholder-amber-200"
+                          />
+                        )}
                       </td>
                       {/* Net Rate excl — calculated */}
                       <td className="px-2 py-2.5 text-right text-xs text-surface-500">

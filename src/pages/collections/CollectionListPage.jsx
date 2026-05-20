@@ -7,12 +7,33 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { Pagination } from '@/components/ui/Pagination'
 import { listCollections } from '@/api/collections'
-import { cn } from '@/utils/helpers'
 import { ROUTES } from '@/utils/constants'
 import RecordCollectionModal from './RecordCollectionModal'
 
 const fmtMoney = (v) => v == null ? '—' : '₹' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Number(v))
 const fmtDate = (v) => v ? new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'
+
+const STATUS_META = {
+  OUTSTANDING: { label: 'Outstanding', bg: 'bg-red-50 text-red-700' },
+  PARTIAL: { label: 'Partially Paid', bg: 'bg-amber-50 text-amber-700' },
+  FULL: { label: 'Fully Paid', bg: 'bg-green-50 text-green-700' },
+}
+
+const TYPE_LABELS = {
+  ADVANCE: 'Advance',
+  ON_ACCOUNT: 'On Account',
+  AGAINST_DC: 'Against Delivery Challan',
+}
+
+const getCollectionStatus = (collection) => {
+  const alloc = collection.allocations?.[0]
+  if (!alloc || alloc.challanTotalAmount == null) return null
+  const amount = Number(collection.amount || 0)
+  const total = Number(alloc.challanTotalAmount || 0)
+  if (amount >= total) return STATUS_META.FULL
+  if (amount > 0) return STATUS_META.PARTIAL
+  return STATUS_META.OUTSTANDING
+}
 
 export default function CollectionListPage() {
   const navigate = useNavigate()
@@ -37,7 +58,7 @@ export default function CollectionListPage() {
   }, [filterMonth])
 
   const load = useCallback(async () => {
-    setLoading(true)
+    Promise.resolve().then(() => setLoading(true))
     try {
       const { from, to } = getDateRange()
       const result = await listCollections({ from, to, page, size: 20 })
@@ -45,11 +66,13 @@ export default function CollectionListPage() {
     } catch (e) {
       console.error(e)
     } finally {
-      setLoading(false)
+      Promise.resolve().then(() => setLoading(false))
     }
   }, [filterMonth, page, getDateRange])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    Promise.resolve().then(() => load())
+  }, [load])
 
   // Compute summary stats from data
   const totalCollected = data.content?.reduce((s, c) => s + (Number(c.amount) || 0), 0) || 0
@@ -66,7 +89,7 @@ export default function CollectionListPage() {
       title="Collections"
       breadcrumbs={['Cash Sales', 'Collections']}
       actions={
-        <Button onClick={() => setShowRecord(true)}>
+        <Button type="button" variant="gold" onClick={() => setShowRecord(true)}>
           <Plus className="h-4 w-4" /> Record Collection
         </Button>
       }
@@ -122,7 +145,7 @@ export default function CollectionListPage() {
                     <th className="px-3 py-3 text-left text-xs font-semibold text-surface-600 uppercase">Customer</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-surface-600 uppercase">Challan Amt</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-surface-600 uppercase">Collected</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-surface-600 uppercase">Collected By</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-surface-600 uppercase">Status</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold text-surface-600 uppercase">Type</th>
                   </tr>
                 </thead>
@@ -137,8 +160,18 @@ export default function CollectionListPage() {
                         <td className="px-3 py-3 text-surface-900">{c.customerName}</td>
                         <td className="px-3 py-3 text-right text-surface-700">{fmtMoney(c.allocations?.[0]?.challanTotalAmount)}</td>
                         <td className="px-3 py-3 text-right font-semibold text-green-700">{fmtMoney(c.amount)}</td>
-                        <td className="px-3 py-3 text-surface-600">{c.collectedBy}</td>
-                        <td className="px-3 py-3 text-surface-500 text-xs">{c.type}</td>
+                        <td className="px-3 py-3">
+                          {(() => {
+                            const status = getCollectionStatus(c)
+                            if (!status) return <span className="text-surface-500 text-xs">—</span>
+                            return (
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ${status.bg}`}>
+                                {status.label}
+                              </span>
+                            )
+                          })()}
+                        </td>
+                        <td className="px-3 py-3 text-surface-500 text-xs">{TYPE_LABELS[c.type] || c.type || '—'}</td>
                       </tr>
                     ))
                   )}

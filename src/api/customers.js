@@ -8,9 +8,24 @@ export function listCashCustomers({ q = '', clusterId, label, page = 0, size = 2
   return apiGet('/api/v1/cash-customers', { q, clusterId, label, page, size, sortBy, sortDir })
 }
 
+/** GET /api/v1/cash-customers/{id}/profile */
+export function getCashCustomerProfile(id) {
+  return apiGet(`/api/v1/cash-customers/${id}/profile`)
+}
+
 /** GET /api/v1/cash-customers/{id}/ledger */
 export function getCashCustomerLedger(id) {
   return apiGet(`/api/v1/cash-customers/${id}/ledger`)
+}
+
+/** GET /api/v1/cash-customers/{id}/challans */
+export function getCashCustomerChallans(id) {
+  return apiGet(`/api/v1/cash-customers/${id}/challans`)
+}
+
+/** GET /api/v1/cash-customers/{id}/rates */
+export function getCashCustomerRates(id) {
+  return apiGet(`/api/v1/cash-customers/${id}/rates`)
 }
 
 /** GET /api/v1/customers/gst — read-only Zoho-synced B2B */

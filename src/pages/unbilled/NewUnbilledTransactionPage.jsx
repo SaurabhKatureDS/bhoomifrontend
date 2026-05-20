@@ -47,7 +47,7 @@ export default function NewUnbilledTransactionPage() {
   const [saving, setSaving] = useState(false)
   const [parties, setParties] = useState([])
   const [locations, setLocations] = useState([])
-  const [items, setItems] = useState([])
+  const [stockList, setStockList] = useState([])
   const [partySearch, setPartySearch] = useState('')
   const [partyDropdown, setPartyDropdown] = useState(false)
   const [selectedParty, setSelectedParty] = useState(null)
@@ -60,30 +60,35 @@ export default function NewUnbilledTransactionPage() {
     Promise.all([
       listBillingParties({ size: 200 }),
       listLocations(),
-      apiGet('/api/v1/items', { page: 0, size: 500 }),
-    ]).then(([pts, locs, itms]) => {
+      apiGet('/api/v1/unbilled-stock'),
+    ]).then(([pts, locs, stks]) => {
       setParties(pts?.content || pts || [])
       setLocations(Array.isArray(locs) ? locs : locs?.content || [])
-      setItems(itms?.content || itms || [])
+      setStockList(stks || [])
     })
   }, [])
 
   const filteredParties = parties.filter(p => !partySearch || p.name?.toLowerCase().includes(partySearch.toLowerCase())).slice(0, 20)
 
-  const handleItemSelect = async (idx, itemId) => {
-    const item = items.find(i => String(i.id) === String(itemId))
-    if (!item) return
-    // fetch available stock for this SKU
-    let availableCases = null
-    try {
-      const stock = await getUnbilledStockBySku(item.sku)
-      availableCases = stock?.totalCases ?? null
-    } catch {}
+  const handleStockSelect = (idx, stockId) => {
+    const stock = stockList.find(s => String(s.id) === String(stockId))
+    if (!stock) return
+
+    const availableCases = (stock.casesIn || 0) - (stock.casesBilled || 0)
+
     setLines(ls => ls.map((l, i) => i === idx ? calcLine({
-      ...l, itemId: item.id, sku: item.sku, productName: item.name,
-      packing: item.standardPacking || item.packing || '',
-      mrp: item.mrp || '', gstRate: item.gstRate || '',
+      ...l,
+      itemId: stock.itemId,
+      unbilledStockId: stock.id,
+      sourceChallanId: stock.sourceChallanId,
+      sku: stock.sku,
+      productName: stock.productName,
+      packing: stock.packing || '',
+      mrp: stock.mrp || '',
+      gstRate: stock.gstPercent || '',
+      cases: availableCases,
       availableCases,
+      invoiceRate: stock.sourceRate || '',
     }) : l))
   }
 
@@ -112,9 +117,17 @@ export default function NewUnbilledTransactionPage() {
         challanInvoiceValue: challanValue,
         items: lines.filter(l => l.itemId).map(l => ({
           itemId: l.itemId,
+          unbilledStockId: l.unbilledStockId,
+          sourceChallanId: l.sourceChallanId,
+          productName: l.productName,
+          sku: l.sku,
+          packing: l.packing,
+          mrp: l.mrp ? Number(l.mrp) : undefined,
+          gstPercent: l.gstRate ? Number(l.gstRate) : undefined,
           cases: Number(l.cases) || 0,
           invoiceRate: Number(l.invoiceRate) || 0,
-          commissionPct: Number(l.commissionPct) || 0,
+          commissionPercent: Number(l.commissionPct) || 0,
+          lineAmount: l.invoiceValue || 0,
         })),
       })
       navigate(ROUTES.UNBILLED_TRANSACTION_VIEW.replace(':id', tx.id))
@@ -203,7 +216,7 @@ export default function NewUnbilledTransactionPage() {
             <table className="w-full text-sm min-w-[900px]">
               <thead className="bg-surface-50 border-b border-surface-100">
                 <tr>
-                  {['Product', 'SKU', 'MRP', 'GST%', 'Pack', 'Cases', 'Avail.', 'Units', 'Inv. Rate', 'Inv. Value', 'Comm%', 'Comm Amt', 'Cash Due', ''].map(h => (
+                  {['Product Source (Unbilled Stock Line)', 'SKU', 'MRP', 'GST%', 'Pack', 'Cases', 'Avail.', 'Units', 'Inv. Rate', 'Inv. Value', 'Comm%', 'Comm Amt', 'Cash Due', ''].map(h => (
                     <th key={h} className="px-2 py-2 text-left text-xs font-semibold text-surface-500 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -212,10 +225,14 @@ export default function NewUnbilledTransactionPage() {
                 {lines.map((line, idx) => (
                   <tr key={line._key}>
                     <td className="px-2 py-2">
-                      <select value={line.itemId} onChange={e => handleItemSelect(idx, e.target.value)}
-                        className="w-40 px-2 py-1.5 text-sm rounded border border-surface-300 focus:outline-none focus:ring-1 focus:ring-bhoomi-500">
-                        <option value="">Select</option>
-                        {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+                      <select value={line.unbilledStockId || ''} onChange={e => handleStockSelect(idx, e.target.value)}
+                        className="w-72 px-2 py-1.5 text-xs rounded border border-surface-300 focus:outline-none focus:ring-1 focus:ring-bhoomi-500">
+                        <option value="">Select Unbilled Stock Line</option>
+                        {stockList.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.productName} ({s.sku}) · Challan {s.sourceChallanNumber} · Avail: {(s.casesIn || 0) - (s.casesBilled || 0)} cases
+                          </option>
+                        ))}
                       </select>
                     </td>
                     <td className="px-2 py-2 text-surface-500 whitespace-nowrap">{line.sku || '—'}</td>

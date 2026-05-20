@@ -5,6 +5,7 @@ import LoginPage from '@/pages/auth/LoginPage'
 import MfaPage from '@/pages/auth/MfaPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
 import CustomersPage from '@/pages/customers/CustomersPage'
+import CustomerProfilePage from '@/pages/customers/CustomerProfilePage'
 import ItemMasterPage from '@/pages/items/ItemMasterPage'
 import NewRatePage from '@/pages/rates/NewRatePage'
 import RateListPage from '@/pages/rates/RateListPage'
@@ -38,6 +39,7 @@ function App() {
           <Route element={<AppShell />}>
             <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
             <Route path={ROUTES.CUSTOMERS} element={<CustomersPage />} />
+            <Route path={ROUTES.CUSTOMER_PROFILE} element={<CustomerProfilePage />} />
             <Route path={ROUTES.ITEM_MASTER} element={<ItemMasterPage />} />
             <Route path={ROUTES.RATES} element={<RateListPage />} />
             <Route path={ROUTES.RATES_NEW} element={<NewRatePage />} />

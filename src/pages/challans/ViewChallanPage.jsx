@@ -273,47 +273,6 @@ export default function ViewChallanPage() {
             </CardBody>
           </Card>
 
-          {/* Line items */}
-          <Card>
-            <div className="px-4 py-3 border-b border-surface-200">
-              <h3 className="text-sm font-semibold text-surface-800">Products</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-surface-50 border-b border-surface-100">
-                  <tr>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">Product</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">SKU</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">Pack</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">Cases</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">Units</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-500">Rate Mode</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-surface-500">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-100">
-                  {(challan.items || []).map((item, i) => (
-                    <tr key={i}>
-                      <td className="px-3 py-2 font-medium text-surface-800">{item.productName}</td>
-                      <td className="px-3 py-2 text-surface-500">{item.sku}</td>
-                      <td className="px-3 py-2 text-surface-500">{item.packing}</td>
-                      <td className="px-3 py-2 text-surface-700">{item.cases}</td>
-                      <td className="px-3 py-2 text-surface-500">{(item.cases || 0) * (parseInt(item.packing) || 1)}</td>
-                      <td className="px-3 py-2 text-surface-500">{item.rateMode}</td>
-                      <td className="px-3 py-2 text-right font-medium text-surface-900">{fmtMoney(item.lineAmount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-surface-200 bg-surface-50">
-                    <td colSpan={6} className="px-3 py-3 text-right font-semibold text-surface-700">Total</td>
-                    <td className="px-3 py-3 text-right font-bold text-surface-900">{fmtMoney(challan.totalAmount)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </Card>
-
           {/* Collection Status + History */}
           <Card>
             {/* Stat row */}
@@ -374,6 +333,106 @@ export default function ViewChallanPage() {
                     </tr>
                   </tfoot>
                 )}
+              </table>
+            </div>
+          </Card>
+
+          {/* Line items */}
+          <Card>
+            <div className="px-4 py-3 border-b border-surface-200">
+              <h3 className="text-sm font-semibold text-surface-800">Products</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-surface-50 border-b border-surface-100">
+                  <tr>
+                    <th className="px-2 py-2 text-center text-xs font-semibold text-surface-400 w-8">#</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-surface-600 min-w-[160px]">PRODUCT</th>
+                    <th className="px-2 py-2 text-center text-xs font-semibold text-surface-500">PKG</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-surface-500">MRP</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-surface-500">RM%</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-surface-500">GST%</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-surface-400 bg-surface-100/60">TUR(incl)</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-surface-400 bg-surface-100/60">TUR(excl)</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-amber-600/80 bg-amber-50/60">Disc%<br/>TUR</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-amber-600/80 bg-amber-50/60">Disc%<br/>MRP</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-surface-500">Net(excl)</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-bhoomi-700 bg-blue-50/50">Net Rate<br/>(incl.)</th>
+                    <th className="px-2 py-2 text-center text-xs font-semibold text-surface-700 w-20">Cases</th>
+                    <th className="px-2 py-2 text-right text-xs font-semibold text-surface-700 bg-blue-50/50">Amount</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-surface-500 min-w-[100px]">Note</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-100">
+                  {(challan.items || []).map((item, idx) => (
+                    <tr key={idx} className={cn(idx % 2 === 1 && 'bg-surface-50/60')}>
+                      {/* # */}
+                      <td className="px-2 py-2 text-center text-xs text-surface-400">{idx + 1}</td>
+                      {/* Product */}
+                      <td className="px-3 py-2">
+                        <div className="font-medium text-surface-900 text-xs leading-tight">{item.productName || '—'}</div>
+                        {item.sku && <div className="text-xs text-surface-400 mt-0.5">{item.sku}</div>}
+                      </td>
+                      {/* PKG */}
+                      <td className="px-2 py-2 text-center text-surface-600 text-xs">{item.pkg != null ? item.pkg : item.packing || '—'}</td>
+                      {/* MRP */}
+                      <td className="px-2 py-2 text-right text-surface-600 text-xs whitespace-nowrap">
+                        {item.mrp != null ? Number(item.mrp).toFixed(0) : '—'}
+                      </td>
+                      {/* RM% */}
+                      <td className="px-2 py-2 text-right text-surface-500 text-xs">
+                        {item.rmPercent != null ? `${Number(item.rmPercent).toFixed(1)}%` : '—'}
+                      </td>
+                      {/* GST% */}
+                      <td className="px-2 py-2 text-right text-surface-500 text-xs">
+                        {item.gstPercent != null ? `${Number(item.gstPercent).toFixed(0)}%` : '—'}
+                      </td>
+                      {/* TUR(incl) */}
+                      <td className="px-2 py-2 text-right text-surface-500 text-xs bg-surface-100/40">
+                        {item.turIncl != null ? Number(item.turIncl).toFixed(3) : '—'}
+                      </td>
+                      {/* TUR(excl) */}
+                      <td className="px-2 py-2 text-right text-surface-500 text-xs bg-surface-100/40">
+                        {item.turExcl != null ? Number(item.turExcl).toFixed(3) : '—'}
+                      </td>
+                      {/* Disc%TUR */}
+                      <td className="px-2 py-2 text-right text-amber-700 text-xs bg-amber-50/40">
+                        {item.discPctOnTur != null ? `${Number(item.discPctOnTur).toFixed(2)}%` : '—'}
+                      </td>
+                      {/* Disc%MRP */}
+                      <td className="px-2 py-2 text-right text-amber-700 text-xs bg-amber-50/40">
+                        {item.discPctOnMrp != null ? `${Number(item.discPctOnMrp).toFixed(2)}%` : '—'}
+                      </td>
+                      {/* Net Rate excl */}
+                      <td className="px-2 py-2 text-right text-surface-600 text-xs">
+                        {item.netRateExcl != null ? Number(item.netRateExcl).toFixed(3) : '—'}
+                      </td>
+                      {/* Net Rate incl */}
+                      <td className="px-2 py-2 text-right font-semibold text-bhoomi-700 text-xs bg-blue-50/40">
+                        {item.netRate != null ? Number(item.netRate).toFixed(3) : '—'}
+                      </td>
+                      {/* Cases */}
+                      <td className="px-2 py-2 text-center text-xs text-surface-700">{item.cases}</td>
+                      {/* Amount */}
+                      <td className="px-2 py-2 text-right font-semibold text-surface-900 text-xs bg-blue-50/40 whitespace-nowrap">
+                        {item.lineAmount ? `₹${Number(item.lineAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                      </td>
+                      {/* Note */}
+                      <td className="px-2 py-2 text-surface-500 text-xs">
+                        {item.note || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-surface-200 bg-surface-50">
+                    <td colSpan={13} className="px-3 py-3 text-right font-semibold text-surface-700 text-sm">Total Amount</td>
+                    <td className="px-2 py-3 text-right font-bold text-surface-900 text-sm whitespace-nowrap">
+                      {fmtMoney(challan.totalAmount)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </Card>

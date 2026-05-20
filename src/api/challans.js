@@ -1,8 +1,8 @@
 import { apiGet, apiPost, apiPut, apiDelete } from './client'
 
 /** GET /api/v1/challans — paged list with optional filters */
-export function listChallans({ customerId, from, to, status, page = 0, size = 20, sort } = {}) {
-  return apiGet('/api/v1/challans', { customerId, from, to, status, page, size, sort })
+export function listChallans({ customerId, from, to, status, q, collectionStatus, page = 0, size = 20, sort } = {}) {
+  return apiGet('/api/v1/challans', { customerId, from, to, status, q, collectionStatus, page, size, sort })
 }
 
 /** GET /api/v1/challans/:id */

@@ -115,25 +115,24 @@ export default function CustomersPage() {
         clusterId: clusterId ? Number(clusterId) : undefined,
         size: pageSize,
       }
-      if (tab === TABS.GST) {
-        const gst = await listGstCustomers({ ...baseParams, page: gstPage })
-        setGstData(gst || { content: [], totalElements: 0 })
-      } else {
-        const cash = await listCashCustomers({
+      const [gst, cash] = await Promise.all([
+        listGstCustomers({ ...baseParams, page: gstPage }),
+        listCashCustomers({
           ...baseParams,
           page: cashPage,
           sortBy: cashSort.by,
           sortDir: cashSort.dir,
           label: cashLabel || undefined,
         })
-        setCashData(cash || { content: [], totalElements: 0 })
-      }
+      ])
+      setGstData(gst || { content: [], totalElements: 0 })
+      setCashData(cash || { content: [], totalElements: 0 })
     } catch (err) {
       console.error(err)
     } finally {
       setLoading(false)
     }
-  }, [tab, debouncedSearch, clusterId, pageSize, gstPage, cashPage, cashSort, cashLabel])
+  }, [debouncedSearch, clusterId, pageSize, gstPage, cashPage, cashSort, cashLabel])
 
   useEffect(() => {
     fetchData()
